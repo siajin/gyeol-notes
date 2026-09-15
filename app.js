@@ -241,6 +241,9 @@ const seedNotes = [
     ],
   },
 ];
+const originalSamples = structuredClone(seedNotes);
+enrichSamples(seedNotes);
+// Keep the existing storage key so previously written notes are preserved.
 const KEY = "gyeol.workspace.v1";
 function readState() {
   try {
@@ -271,6 +274,7 @@ function readState() {
   };
 }
 let data = readState();
+upgradeSavedSamples(data.notes, originalSamples, seedNotes);
 data.recommendationDecisions ||= {};
 for (const n of data.notes)
   n.classNotes = Array.isArray(n.classNotes) ? n.classNotes : [];
@@ -404,7 +408,7 @@ function sidebar() {
       ...data.notes.map((n) => n.subject),
     ]),
   ];
-  return `<aside class="sidebar" aria-label="주요 메뉴">${btn('<span class="brand-logo">결</span><span class="brand-name">결 노트<small>gyeol notes</small></span>', "home", "brand")}<div class="workspace-picker"><span class="avatar">나</span>나의 노트 공간${icon("lock")}</div><nav>${btn(icon("book") + "내 노트", "home", "nav-item " + (["home", "editor"].includes(ui.view) ? "active" : ""))}${btn(icon("dna") + "Note DNA", "dna", "nav-item " + (ui.view === "dna" ? "active" : ""))}${btn(icon("grid") + "템플릿", "templates", "nav-item " + (ui.view === "templates" ? "active" : ""))}</nav><div class="section-label">이번 학기${btn(icon("plus"), "upload", "icon-button", 'aria-label="새 노트 만들기"')}</div><div class="course-list">${subjects
+  return `<aside class="sidebar" aria-label="주요 메뉴">${btn('<span class="brand-logo">' + icon("dna") + '</span><span class="brand-name">Note DNA</span>', "home", "brand")}<div class="workspace-picker"><span class="avatar">나</span>나의 노트 공간${icon("lock")}</div><nav>${btn(icon("book") + "내 노트", "home", "nav-item " + (["home", "editor"].includes(ui.view) ? "active" : ""))}${btn(icon("dna") + "정리 스타일", "dna", "nav-item " + (ui.view === "dna" ? "active" : ""))}${btn(icon("grid") + "템플릿", "templates", "nav-item " + (ui.view === "templates" ? "active" : ""))}</nav><div class="section-label">이번 학기${btn(icon("plus"), "upload", "icon-button", 'aria-label="새 노트 만들기"')}</div><div class="course-list">${subjects
     .map((s) => {
       const ns = data.notes.filter((n) => n.subject === s);
       return `${btn(icon(ui.expanded === s ? "down" : "right") + `<span class="course-dot ${subjectClass(s)}"></span>${esc(s)}<span class="count">${ns.length}</span>`, "course", "course-button", `data-subject="${esc(s)}" aria-expanded="${ui.expanded === s}"`)}${ui.expanded === s ? ns.map((n) => btn(icon("file") + `<span>${esc(n.shortTitle || n.title)}</span>`, "open-note", "note-link " + (ui.noteId === n.id && ui.view === "editor" ? "current" : ""), `data-id="${esc(n.id)}"`)).join("") : ""}`;
@@ -424,7 +428,7 @@ function blockHTML(b, index) {
       : b.source === "memo"
         ? ["pen", "내 메모", "memo"]
         : b.source === "ai"
-          ? ["light", "쉬운 설명", "ai"]
+          ? ["light", "보충 설명", "ai"]
           : b.source === "external"
             ? ["globe", "외부 보충", "external"]
             : ["file", `강의자료 · p.${b.page || 1}`, ""];
@@ -434,7 +438,10 @@ function blockHTML(b, index) {
     "source-label " + src[2],
     `data-block="${b.id}"`,
   );
-  return `<section class="note-block ${ui.selected === b.id ? "selected" : ""}" data-block="${esc(b.id)}" id="block-${esc(b.id)}" tabindex="0" aria-label="${esc(b.title || src[1])} 블록">${btn(icon("grip"), "select-block", "block-handle", `draggable="true" data-block="${esc(b.id)}" aria-label="블록 이동 및 편집"`)}${b.title ? `<div class="block-title"><span class="section-number">${String(index).padStart(2, "0")}</span><h2>${esc(b.title)}</h2></div>` : ""}${source}${ui.exam ? `<div class="priority">${"★".repeat(b.priority || 1)} ${b.priority === 3 ? "반드시 기억하기" : "중요 개념"}</div>` : ""}<div class="${b.type === "callout" ? "explain-callout" : b.type === "memo" ? "memo-body" : ""}">${b.type === "callout" ? icon("light") : ""}<div class="block-content" contenteditable="true" role="textbox" aria-multiline="true" aria-label="${esc(b.title || src[1])} 내용" spellcheck="false">${sanitize(b.html)}</div></div>${b.type === "formula" ? `<div class="formula">${esc(b.formula || "")}</div><div class="formula-foot"><span>p: 페이지 폴트 확률 · ma: 메모리 접근 시간</span>${btn("수식 이해하기" + icon("down"), "formula-menu", "", 'data-block="' + b.id + '"')}</div>` : ""}${ui.selected === b.id ? toolbar(b) : ""}</section>`;
+  const titleMarkup = b.title
+    ? `<div class="block-title"><span class="section-number">${String(index).padStart(2, "0")}</span><h2>${esc(b.title)}</h2></div>`
+    : "";
+  return `<section class="note-block ${b.optional ? "supplementary-block" : ""} ${ui.selected === b.id ? "selected" : ""}" data-block="${esc(b.id)}" id="block-${esc(b.id)}" tabindex="0" aria-label="${esc(b.title || src[1])} 블록">${btn(icon("grip"), "select-block", "block-handle", `draggable="true" data-block="${esc(b.id)}" aria-label="블록 이동 및 편집"`)}${b.optional ? `<details class="supplementary"><summary>${titleMarkup}<span class="expand-hint">펼쳐보기</span></summary><div class="supplementary-content">` : titleMarkup}${source}${ui.exam ? `<div class="priority">${"★".repeat(b.priority || 1)} ${b.priority === 3 ? "반드시 기억하기" : "중요 개념"}</div>` : ""}<div class="${b.type === "callout" ? "explain-callout" : b.type === "memo" ? "memo-body" : ""}">${b.type === "callout" ? icon("light") : ""}<div class="block-content" contenteditable="true" role="textbox" aria-multiline="true" aria-label="${esc(b.title || src[1])} 내용" spellcheck="false">${sanitize(b.html)}</div></div>${b.type === "formula" ? `<div class="formula">${esc(b.formula || "")}</div><div class="formula-foot"><span>p: 페이지 폴트 확률 · ma: 메모리 접근 시간</span>${btn("수식 이해하기" + icon("down"), "formula-menu", "", 'data-block="' + b.id + '"')}</div>` : ""}${b.optional ? "</div></details>" : ""}${ui.selected === b.id ? toolbar(b) : ""}</section>`;
 }
 function sourcePanel() {
   const n = note();
@@ -460,7 +467,7 @@ function editor() {
   let number = 0;
   const blocks = n.blocks.filter((b) => !ui.exam || b.priority >= 2);
   const d = dna();
-  return `<div class="editor-wrap"><section class="document-header"><div class="document-icon">${icon("book")}</div><div class="document-eyebrow">${esc(n.subject)}<span>·</span>${n.week ? `WEEK ${esc(n.week)}` : "MY NOTE"}</div><h1 contenteditable="true" role="textbox" aria-label="노트 제목" id="note-title" spellcheck="false">${esc(n.title)}</h1><div class="document-meta">${btn(icon("file") + esc(n.file || "직접 작성한 노트"), "source-toggle")}<span>${n.pages ? `${n.pages}페이지 · ` : ""}${n.sample ? "예시 노트" : "내 노트"}</span><span>${icon("clock")} ${dateLabel(n.updated)} 편집</span></div></section><div class="document-bar"><div class="view-tabs" aria-label="노트 보기 방식">${btn(icon("book") + "학습 노트", "study", "view-tab " + (!ui.exam ? "active" : ""), `aria-pressed="${!ui.exam}"`)}${btn(icon("star") + "시험 모드", "exam", "view-tab " + (ui.exam ? "active" : ""), `aria-pressed="${ui.exam}"`)}</div><div class="bar-right"><span class="bar-caption">읽고, 나에게 맞게 다듬어 보세요</span>${btn(icon("panel") + "원본 함께 보기", "source-toggle", "split-button " + (ui.sourceOpen ? "active" : ""), `aria-pressed="${ui.sourceOpen}"`)}</div></div>${classNotesBar(n)}<div class="editor-layout"><article class="note-canvas" aria-label="노트 편집기">${ui.sourceOpen ? sourcePanel() : ""}${ui.exam ? `<div class="exam-banner">${icon("star")}중요도 2개 이상의 개념만 모았어요. 메모와 원래 내용은 보존됩니다.</div>` : `<p class="note-intro">${n.id === "os-07" ? "필요한 것만 메모리에 올리고, 한정된 공간을 효율적으로 사용하는 방법." : n.sample ? "핵심을 이해하고, 나만의 설명을 덧붙여 보세요." : "내용을 눌러 작성하세요. 변경 사항은 이 기기에 저장됩니다."}</p>`}${blocks.length ? blocks.map((b) => blockHTML(b, b.title ? ++number : number)).join("") : `<div class="empty-state">${icon("book")}<p>${ui.exam ? "중요 표시한 개념이 아직 없어요." : "첫 문장을 기록해 보세요."}</p></div>`}${!ui.exam ? btn(icon("plus") + "내 메모 추가", "add-memo", "add-block") : ""}<div class="editor-foot">${icon("grip")}블록을 선택하면 다듬기 메뉴가 나타나요. 손잡이로 순서를 바꿀 수 있어요.</div></article><aside class="document-aside" aria-label="노트 목차와 설정"><h2 class="aside-label">이 노트의 목차</h2><nav class="outline">${blocks
+  return `<div class="editor-wrap"><section class="document-header"><div class="document-icon">${icon("book")}</div><div class="document-eyebrow">${esc(n.subject)}<span>·</span>${n.week ? `WEEK ${esc(n.week)}` : "MY NOTE"}</div><h1 contenteditable="true" role="textbox" aria-label="노트 제목" id="note-title" spellcheck="false">${esc(n.title)}</h1><div class="document-meta">${btn(icon("file") + esc(n.file || "직접 작성한 노트"), "source-toggle")}<span>${n.pages ? `${n.pages}페이지 · ` : ""}${n.sample ? "예시 노트" : "내 노트"}</span><span>${icon("clock")} ${dateLabel(n.updated)} 편집</span></div></section><div class="document-bar"><div class="view-tabs" aria-label="노트 보기 방식">${btn(icon("book") + "학습 노트", "study", "view-tab " + (!ui.exam ? "active" : ""), `aria-pressed="${!ui.exam}"`)}${btn(icon("star") + "시험 모드", "exam", "view-tab " + (ui.exam ? "active" : ""), `aria-pressed="${ui.exam}"`)}</div><div class="bar-right"><span class="bar-caption">읽고, 나에게 맞게 다듬어 보세요</span>${btn(icon("panel") + "원본 함께 보기", "source-toggle", "split-button " + (ui.sourceOpen ? "active" : ""), `aria-pressed="${ui.sourceOpen}"`)}</div></div>${classNotesBar(n)}<div class="editor-layout"><article class="note-canvas" aria-label="노트 편집기">${ui.sourceOpen ? sourcePanel() : ""}${ui.exam ? `<div class="exam-banner">${icon("star")}중요도 2개 이상의 개념만 모았어요. 메모와 원래 내용은 보존됩니다.</div>` : `<p class="note-intro">${n.id === "os-07" ? "필요한 것만 메모리에 올리고, 한정된 공간을 효율적으로 사용하는 방법." : n.sample ? "핵심을 이해하고, 나만의 설명을 덧붙여 보세요." : "내용을 눌러 작성하세요. 변경 사항은 이 기기에 저장됩니다."}</p>`}${!ui.exam ? overviewHTML(n) : ""}${blocks.length ? blocks.map((b) => blockHTML(b, b.title ? ++number : number)).join("") : `<div class="empty-state">${icon("book")}<p>${ui.exam ? "중요 표시한 개념이 아직 없어요." : "첫 문장을 기록해 보세요."}</p></div>`}${!ui.exam ? btn(icon("plus") + "내 메모 추가", "add-memo", "add-block") : ""}<div class="editor-foot">${icon("grip")}블록을 선택하면 다듬기 메뉴가 나타나요. 손잡이로 순서를 바꿀 수 있어요.</div></article><aside class="document-aside" aria-label="노트 목차와 설정"><h2 class="aside-label">이 노트의 목차</h2><nav class="outline">${blocks
     .filter((b) => b.title)
     .map((b, i) =>
       btn(
@@ -472,7 +479,7 @@ function editor() {
     )
     .join(
       "",
-    )}</nav><hr class="aside-divider"><h2 class="aside-label">연결된 자료</h2>${btn(icon("file") + `<span><strong>${esc(n.file || "직접 작성")}</strong><small>${n.sample ? "샘플 자료 · " : ""}${n.pages || 0}페이지</small></span>`, "source-toggle", "source-card")}<hr class="aside-divider"><div class="dna-card"><div class="dna-card-heading">${icon("dna")}이 과목의 Note DNA</div><p>나의 정리 방식에 맞춰<br>차곡차곡 쌓이는 노트.</p><div class="dna-tags"><span>${["핵심만", "적당한 설명", "자세한 설명"][d.density - 1]}</span><span>${esc(d.formats[0] || "자유 형식")}</span><span>${d.star ? "중요 표시" : "담백하게"}</span></div>${btn("정리 방식 조절하기" + icon("arrow"), "dna")}</div><p class="aside-help">${icon("pen")}직접 적은 메모는<br>자동 편집에서 제외돼요.</p></aside></div></div>`;
+    )}</nav><div class="rail-style">${icon("dna")}<div><strong>나의 정리 스타일</strong><small>${["핵심만", "적당한 설명", "자세한 설명"][d.density - 1]} · ${esc(d.formats[0] || "자유 형식")}</small></div>${btn(icon("right"), "dna", "icon-button", 'aria-label="정리 스타일 설정"')}</div></aside></div></div>`;
 }
 function dateLabel(value) {
   const d = new Date(value);
@@ -487,7 +494,7 @@ function render() {
         ? "Note DNA"
         : ui.view === "templates"
           ? "템플릿"
-          : "내 노트") + " — 결";
+          : "내 노트") + " — Note DNA";
   $("#app").innerHTML =
     `<div class="app-shell">${sidebar()}<div class="mobile-shade" data-action="mobile-close"></div><main class="workspace" id="main">${header()}${ui.view === "editor" ? editor() : ui.view === "dna" ? dnaPage() : ui.view === "templates" ? templatesPage() : home()}</main></div>`;
 }
@@ -924,7 +931,7 @@ function evidence() {
   const isExternal = b.source === "external";
   showModal(
     "내용의 근거",
-    `<div class="source-label ${isExternal ? "external" : ""}">${icon(isExternal ? "globe" : "file")}${isExternal ? "외부 참고자료" : b.source === "ai" ? "이해를 위한 쉬운 설명" : "강의자료"}</div><div class="compare-content">${sanitize(b.html)}</div><hr class="aside-divider">${isExternal ? '<p class="upload-note">이 예시 노트의 읽기 자료입니다. 자동 검색으로 검증된 인용은 아닙니다.</p><a class="btn secondary" href="https://pages.cs.wisc.edu/~remzi/OSTEP/vm-beyondphys.pdf" target="_blank" rel="noopener noreferrer">OSTEP · Beyond Physical Memory: Mechanisms ↗</a>' : b.source === "ai" ? '<p class="upload-note">개념 이해를 돕기 위한 예시 비유입니다. 강의자료 원문의 표현과 구분됩니다.</p>' : `<p class="upload-note">${esc(note().file)} · ${b.page || 1}페이지${note().sample ? " · 샘플 자료" : ""}</p>`}`,
+    `<div class="source-label ${isExternal ? "external" : ""}">${icon(isExternal ? "globe" : "file")}${isExternal ? "외부 참고자료" : b.source === "ai" ? "개념 이해를 위한 보충 설명" : "강의자료"}</div><div class="compare-content">${sanitize(b.html)}</div><hr class="aside-divider">${isExternal ? '<p class="upload-note">이 예시 노트의 읽기 자료입니다. 자동 검색으로 검증된 인용은 아닙니다.</p><a class="btn secondary" href="https://pages.cs.wisc.edu/~remzi/OSTEP/vm-beyondphys.pdf" target="_blank" rel="noopener noreferrer">OSTEP · Beyond Physical Memory: Mechanisms ↗</a>' : b.source === "ai" ? '<p class="upload-note">개념 이해를 돕기 위해 준비한 예시 설명입니다. 강의자료 원문의 표현과 구분됩니다.</p>' : `<p class="upload-note">${esc(note().file)} · ${b.page || 1}페이지${note().sample ? " · 샘플 자료" : ""}</p>`}`,
     btn("닫기", "close-modal", "btn secondary") +
       btn("원본 함께 보기", "evidence-original", "btn primary"),
     "강의자료, 외부 설명, 내 메모의 출처를 구분해요.",
@@ -1269,6 +1276,10 @@ function handleAction(action, el = {}) {
       render();
       break;
     case "outline":
+      {
+        const folded = $("#block-" + CSS.escape(el.dataset.id) + " details");
+        if (folded) folded.open = true;
+      }
       $("#block-" + CSS.escape(el.dataset.id))?.scrollIntoView({
         behavior: "smooth",
         block: "start",
@@ -1576,7 +1587,7 @@ function handleAction(action, el = {}) {
       break;
     case "export-dna":
       download(
-        "결-Note-DNA.json",
+        "Note-DNA-settings.json",
         JSON.stringify(
           { name: "나의 Note DNA", version: 1, profiles: data.dna },
           null,
@@ -1607,6 +1618,7 @@ document.addEventListener("click", (e) => {
     return;
   }
   const block = e.target.closest(".note-block");
+  if (e.target.closest("summary")) return;
   if (block) {
     selectBlock(block.dataset.block);
     return;
@@ -1655,7 +1667,7 @@ document.addEventListener("input", (e) => {
   } else if (el.id === "note-title") {
     note().title = el.textContent.trim().slice(0, 150) || "제목 없는 노트";
     note().shortTitle = note().title;
-    document.title = note().title + " — 결";
+    document.title = note().title + " — Note DNA";
     changed();
   } else if (el.id === "note-search") {
     ui.query = el.value;
@@ -1761,6 +1773,8 @@ document.addEventListener("keydown", (e) => {
   ) {
     e.preventDefault();
     selectBlock(e.target.dataset.block);
+    const detail = $("details.supplementary", e.target);
+    if (detail) detail.open = true;
     $(".block-content", e.target).focus();
   }
   if (
@@ -1932,3 +1946,24 @@ if (document.modelContext?.registerTool) {
   }
   window.addEventListener("pagehide", () => lifecycle.abort(), { once: true });
 }
+
+// Expand supplementary examples for printing, then restore the reading state.
+let printSections = [];
+window.addEventListener("beforeprint", () => {
+  printSections = $$("details.supplementary").map((el) => [el, el.open]);
+  for (const [el] of printSections) el.open = true;
+});
+window.addEventListener("afterprint", () => {
+  for (const [el, open] of printSections) el.open = open;
+  printSections = [];
+});
+document.addEventListener(
+  "toggle",
+  (e) => {
+    if (e.target.matches?.("details.supplementary")) {
+      const label = $(".expand-hint", e.target);
+      if (label) label.textContent = e.target.open ? "접기" : "펼쳐보기";
+    }
+  },
+  true,
+);

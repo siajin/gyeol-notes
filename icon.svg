@@ -1,1 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#343b32"/><text x="32" y="44" fill="#fff" font-family="serif" font-size="38" text-anchor="middle">결</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="16" fill="#5266ed" />
+  <g fill="none" stroke="white" stroke-width="3.4" stroke-linecap="round">
+    <path
+      d="M22 13c0 18 20 20 20 38M42 13c0 18-20 20-20 38M24 21h16M23 42h18M27 29h10M27 35h10"
+    />
+  </g>
+</svg>
