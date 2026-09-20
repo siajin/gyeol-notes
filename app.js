@@ -1599,7 +1599,7 @@ function handleAction(action, el = {}) {
         JSON.stringify(
           {
             name: "나의 Note DNA",
-            version: 4,
+            version: 5,
             personal: personalSettings(),
             subjects: data.subjectDNA,
             learning: data.learningDNA,

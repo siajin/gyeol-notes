@@ -1901,3 +1901,197 @@ select {
   margin-top: 0;
   border-top: 0;
 }
+.dna-example-settings {
+  border: 0;
+  padding: 0;
+  margin: 27px 0 0;
+}
+.dna-example-settings legend {
+  font-size: 14px;
+  font-weight: 600;
+  color: #42526d;
+  padding: 0;
+  margin-bottom: 13px;
+}
+.dna-example-kind-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+.dna-example-kind-grid label {
+  display: flex;
+  gap: 10px;
+  border: 1px solid #e3e8f1;
+  border-radius: 7px;
+  padding: 13px;
+  cursor: pointer;
+}
+.dna-example-kind-grid label:has(input:checked) {
+  background: #f7f9ff;
+  border-color: #b7c5e6;
+}
+.dna-example-kind-grid label:has(input:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+.dna-example-kind-grid input {
+  width: 14px;
+  height: 14px;
+  accent-color: #748bc1;
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.dna-example-kind-grid strong {
+  font-size: 13px;
+  font-weight: 500;
+  display: block;
+  color: #596d91;
+}
+.dna-example-kind-grid small {
+  font-size: 11px;
+  line-height: 1.7;
+  display: block;
+  color: #8a97af;
+  margin-top: 4px;
+}
+.dna-example-count {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+.dna-example-count > label {
+  font-size: 13px;
+  color: #52607b;
+}
+.dna-example-count input {
+  width: 115px;
+  min-height: 40px;
+  border: 1px solid #dfe5f0;
+  border-radius: 6px;
+  padding: 9px 48px 9px 12px;
+  font-size: 14px;
+  background: white;
+  color: #50617d;
+}
+.dna-example-limit,
+.dna-example-preview-foot {
+  font-size: 11px;
+  color: #8d97a9;
+  display: block;
+  margin-top: 5px;
+  line-height: 1.7;
+}
+.dna-example-preview {
+  margin-top: 20px;
+}
+.dna-example-preview-head {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.dna-example-preview-head strong {
+  font-size: 12px;
+  font-weight: 600;
+  color: #627b9f;
+}
+.dna-example-preview-head small {
+  font-size: 11px;
+  color: #91a0b8;
+  line-height: 1.7;
+}
+.dna-example-preview .dna-context-example {
+  margin-top: 10px;
+}
+.dna-example-off {
+  font-size: 12px !important;
+  color: #8e99a9 !important;
+  border-top: 1px solid #edf0f7;
+  padding-top: 15px;
+}
+@media (max-width: 520px) {
+  .dna-example-kind-grid label {
+    padding: 11px 9px;
+    gap: 8px;
+  }
+  .dna-example-kind-grid small {
+    font-size: 11px;
+  }
+  .dna-example-kind-grid strong {
+    font-size: 12px;
+  }
+}
+/* Course controls share one list; presets only fill that list. */
+.dna-preset-box {
+  background: #faf9fd;
+  border: 1px solid #eae6f2;
+  border-radius: 9px;
+  padding: 17px;
+  margin-bottom: 26px;
+}
+.dna-preset-title {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 13px;
+}
+.dna-preset-title strong {
+  font-size: 13px;
+  color: #67577e;
+  font-weight: 600;
+}
+.dna-preset-title small {
+  font-size: 12px;
+  color: #94879f;
+  line-height: 1.6;
+}
+.dna-preset-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+.dna-preset-buttons button {
+  background: #fff;
+  border: 1px solid #e3ddeb;
+  border-radius: 6px;
+  padding: 10px 7px;
+  font-size: 13px;
+  color: #7d6f8e;
+  cursor: pointer;
+}
+.dna-preset-buttons button:hover {
+  border-color: #b8a6d3;
+  background: #fdfcff;
+}
+.dna-preset-buttons button.active {
+  background: #eee7f8;
+  border-color: #b5a0d4;
+  color: #73558f;
+  font-weight: 500;
+}
+.dna-preset-status {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #8c7e9b;
+  margin-top: 12px;
+}
+.course-settings-flat {
+  padding-top: 0;
+}
+.dna-settings-main > .dna-advanced + .dna-advanced {
+  margin-top: 0;
+  border-top: 0;
+}
+@media (max-width: 520px) {
+  .dna-preset-box {
+    padding: 14px;
+  }
+  .dna-preset-buttons {
+    gap: 5px;
+  }
+  .dna-preset-buttons button {
+    font-size: 12px;
+    padding: 10px 5px;
+  }
+}
