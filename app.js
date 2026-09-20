@@ -274,12 +274,13 @@ function readState() {
   };
 }
 let data = readState();
+initializeScopedSettings();
 upgradeSavedSamples(data.notes, originalSamples, seedNotes);
 data.recommendationDecisions ||= {};
 for (const n of data.notes)
   n.classNotes = Array.isArray(n.classNotes) ? n.classNotes : [];
 let ui = {
-  view: "editor",
+  view: data.basicDNAReady === false ? "dna" : "editor",
   noteId: "os-07",
   selected: null,
   exam: false,
@@ -358,7 +359,10 @@ function note() {
   return data.notes.find((n) => n.id === ui.noteId);
 }
 function dna(subject = note()?.subject || ui.dnaSubject) {
-  return { ...defaultDNA, ...data.dna.기본, ...data.dna[subject] };
+  return {
+    ...defaultDNA,
+    ...deriveDNA(personalForSubject(subject), subjectSettings(subject)),
+  };
 }
 function save() {
   try {
@@ -467,7 +471,7 @@ function editor() {
   let number = 0;
   const blocks = n.blocks.filter((b) => !ui.exam || b.priority >= 2);
   const d = dna();
-  return `<div class="editor-wrap"><section class="document-header"><div class="document-icon">${icon("book")}</div><div class="document-eyebrow">${esc(n.subject)}<span>·</span>${n.week ? `WEEK ${esc(n.week)}` : "MY NOTE"}</div><h1 contenteditable="true" role="textbox" aria-label="노트 제목" id="note-title" spellcheck="false">${esc(n.title)}</h1><div class="document-meta">${btn(icon("file") + esc(n.file || "직접 작성한 노트"), "source-toggle")}<span>${n.pages ? `${n.pages}페이지 · ` : ""}${n.sample ? "예시 노트" : "내 노트"}</span><span>${icon("clock")} ${dateLabel(n.updated)} 편집</span></div></section><div class="document-bar"><div class="view-tabs" aria-label="노트 보기 방식">${btn(icon("book") + "학습 노트", "study", "view-tab " + (!ui.exam ? "active" : ""), `aria-pressed="${!ui.exam}"`)}${btn(icon("star") + "시험 모드", "exam", "view-tab " + (ui.exam ? "active" : ""), `aria-pressed="${ui.exam}"`)}</div><div class="bar-right"><span class="bar-caption">읽고, 나에게 맞게 다듬어 보세요</span>${btn(icon("panel") + "원본 함께 보기", "source-toggle", "split-button " + (ui.sourceOpen ? "active" : ""), `aria-pressed="${ui.sourceOpen}"`)}</div></div>${classNotesBar(n)}<div class="editor-layout"><article class="note-canvas" aria-label="노트 편집기">${ui.sourceOpen ? sourcePanel() : ""}${ui.exam ? `<div class="exam-banner">${icon("star")}중요도 2개 이상의 개념만 모았어요. 메모와 원래 내용은 보존됩니다.</div>` : `<p class="note-intro">${n.id === "os-07" ? "필요한 것만 메모리에 올리고, 한정된 공간을 효율적으로 사용하는 방법." : n.sample ? "핵심을 이해하고, 나만의 설명을 덧붙여 보세요." : "내용을 눌러 작성하세요. 변경 사항은 이 기기에 저장됩니다."}</p>`}${!ui.exam ? overviewHTML(n) : ""}${blocks.length ? blocks.map((b) => blockHTML(b, b.title ? ++number : number)).join("") : `<div class="empty-state">${icon("book")}<p>${ui.exam ? "중요 표시한 개념이 아직 없어요." : "첫 문장을 기록해 보세요."}</p></div>`}${!ui.exam ? btn(icon("plus") + "내 메모 추가", "add-memo", "add-block") : ""}<div class="editor-foot">${icon("grip")}블록을 선택하면 다듬기 메뉴가 나타나요. 손잡이로 순서를 바꿀 수 있어요.</div></article><aside class="document-aside" aria-label="노트 목차와 설정"><h2 class="aside-label">이 노트의 목차</h2><nav class="outline">${blocks
+  return `<div class="editor-wrap"><section class="document-header"><div class="document-icon">${icon("book")}</div><div class="document-eyebrow">${esc(n.subject)}<span>·</span>${n.week ? `WEEK ${esc(n.week)}` : "MY NOTE"}</div><h1 contenteditable="true" role="textbox" aria-label="노트 제목" id="note-title" spellcheck="false">${esc(n.title)}</h1><div class="document-meta">${btn(icon("file") + esc(n.file || "직접 작성한 노트"), "source-toggle")}<span>${n.pages ? `${n.pages}페이지 · ` : ""}${n.sample ? "예시 노트" : "내 노트"}</span><span>${icon("clock")} ${dateLabel(n.updated)} 편집</span></div></section><div class="document-bar"><div class="view-tabs" aria-label="노트 보기 방식">${btn(icon("book") + "학습 노트", "study", "view-tab " + (!ui.exam ? "active" : ""), `aria-pressed="${!ui.exam}"`)}${btn(icon("star") + "시험 모드", "exam", "view-tab " + (ui.exam ? "active" : ""), `aria-pressed="${ui.exam}"`)}</div><div class="bar-right"><span class="bar-caption">읽고, 나에게 맞게 다듬어 보세요</span>${btn(icon("panel") + "원본 함께 보기", "source-toggle", "split-button " + (ui.sourceOpen ? "active" : ""), `aria-pressed="${ui.sourceOpen}"`)}</div></div>${noteSettingsEntry(n)}${classNotesBar(n)}<div class="editor-layout"><article class="note-canvas" aria-label="노트 편집기">${ui.sourceOpen ? sourcePanel() : ""}${ui.exam ? `<div class="exam-banner">${icon("star")}중요도 2개 이상의 개념만 모았어요. 메모와 원래 내용은 보존됩니다.</div>` : `<p class="note-intro">${n.id === "os-07" ? "필요한 것만 메모리에 올리고, 한정된 공간을 효율적으로 사용하는 방법." : n.sample ? "핵심을 이해하고, 나만의 설명을 덧붙여 보세요." : "내용을 눌러 작성하세요. 변경 사항은 이 기기에 저장됩니다."}</p>`}${!ui.exam ? overviewHTML(n) : ""}${blocks.length ? blocks.map((b) => blockHTML(b, b.title ? ++number : number)).join("") : `<div class="empty-state">${icon("book")}<p>${ui.exam ? "중요 표시한 개념이 아직 없어요." : "첫 문장을 기록해 보세요."}</p></div>`}${!ui.exam ? btn(icon("plus") + "내 메모 추가", "add-memo", "add-block") : ""}<div class="editor-foot">${icon("grip")}블록을 선택하면 다듬기 메뉴가 나타나요. 손잡이로 순서를 바꿀 수 있어요.</div></article><aside class="document-aside" aria-label="노트 목차와 설정"><h2 class="aside-label">이 노트의 목차</h2><nav class="outline">${blocks
     .filter((b) => b.title)
     .map((b, i) =>
       btn(
@@ -479,7 +483,7 @@ function editor() {
     )
     .join(
       "",
-    )}</nav><div class="rail-style">${icon("dna")}<div><strong>나의 정리 스타일</strong><small>${["핵심만", "적당한 설명", "자세한 설명"][d.density - 1]} · ${esc(d.formats[0] || "자유 형식")}</small></div>${btn(icon("right"), "dna", "icon-button", 'aria-label="정리 스타일 설정"')}</div></aside></div></div>`;
+    )}</nav><div class="rail-style">${icon("dna")}<div><strong>나의 정리 스타일</strong><small>${["기초부터", "강의 수준", "전공 심화"][d.density - 1]} · ${esc(d.formats[0] || "자유 형식")}</small></div>${btn(icon("right"), "dna", "icon-button", 'aria-label="정리 스타일 설정"')}</div></aside></div></div>`;
 }
 function dateLabel(value) {
   const d = new Date(value);
@@ -503,7 +507,7 @@ function closePopover() {
 }
 function navigate(view) {
   if (ui.view === "dna" && ui.draft) {
-    data.dna[ui.dnaSubject] = structuredClone(ui.draft);
+    commitScopedDraft();
   }
   save();
   ui.view = view;
@@ -520,7 +524,7 @@ function navigate(view) {
 function openNote(id) {
   if (!data.notes.some((n) => n.id === id)) return;
   if (ui.view === "dna" && ui.draft) {
-    data.dna[ui.dnaSubject] = structuredClone(ui.draft);
+    commitScopedDraft();
   }
   save();
   ui.noteId = id;
@@ -576,26 +580,7 @@ function home() {
 }
 const densityLabels = ["핵심만", "적당히", "자세하게"];
 function dnaPage() {
-  const d = ui.draft || dna(ui.dnaSubject);
-  const options = [
-    ["difficulty", "어려운 개념", ["원문 유지", "쉽게 풀어서", "예시까지"]],
-    ["formula", "수식 설명", ["수식만", "수식 + 설명", "자세한 풀이"]],
-  ];
-  const history = data.history.filter((h) => h.subject === ui.dnaSubject);
-  return `<section class="page"><header class="page-header"><div><h1>나의 정리 방식</h1><p>설명은 얼마나, 중요한 내용은 어떻게. 나에게 맞는 노트의 기준.</p></div><span class="preview-badge">Note DNA</span></header><div class="settings-tabs" aria-label="과목별 설정">${[...new Set(["기본", "운영체제", "알고리즘", "선형대수", ...data.notes.map((n) => n.subject)])].map((s) => btn(esc(s), "dna-subject", s === ui.dnaSubject ? "active" : "", `data-subject="${esc(s)}" aria-pressed="${s === ui.dnaSubject}"`)).join("")}</div><div class="settings-layout"><div><div class="control-group"><div class="control-label"><label for="density">설명량</label><small id="density-label">${densityLabels[d.density - 1]}</small></div><input type="range" class="range" id="density" min="1" max="3" step="1" value="${d.density}" aria-valuetext="${densityLabels[d.density - 1]}"><div class="range-labels"><span>핵심만</span><span>적당히</span><span>자세하게</span></div></div><div class="control-group"><div class="control-label"><strong>정리 형태</strong><small>여러 개 선택 가능</small></div><div class="choice-chips">${["글머리표", "표", "흐름도", "긴 문단"].map((s) => btn(esc(s), "dna-format", "chip " + (d.formats.includes(s) ? "selected" : ""), `data-value="${s}" aria-pressed="${d.formats.includes(s)}"`)).join("")}</div></div>${options.map(([key, label, values]) => `<div class="control-group"><div class="control-label"><strong>${label}</strong></div><div class="segmented">${values.map((s) => btn(esc(s), "dna-choice", d[key] === s ? "selected" : "", `data-key="${key}" data-value="${s}" aria-pressed="${d[key] === s}"`)).join("")}</div></div>`).join("")}<div class="control-group"><div class="control-label"><strong>중요한 내용과 강의자료</strong></div>${[
-    ["bold", "핵심 개념 굵게 표시"],
-    ["star", "중요한 내용에 별표 표시"],
-    ["pages", "강의자료 페이지 표시"],
-    ["examples", "교수님 예제 보존"],
-    ["dedupe", "중복 내용 제거"],
-  ]
-    .map(
-      ([key, label]) =>
-        `<label class="check-row"><input type="checkbox" data-dna-check="${key}" ${d[key] ? "checked" : ""}>${label}</label>`,
-    )
-    .join(
-      "",
-    )}</div><div class="control-group"><div class="control-label"><label for="research-setting">자료 조사 범위</label></div><select id="research-setting"><option value="lecture" ${d.research === "lecture" ? "selected" : ""}>강의자료만</option><option value="balanced" ${d.research === "balanced" ? "selected" : ""}>부족한 부분만 보충</option><option value="deep" ${d.research === "deep" ? "selected" : ""}>관련 개념까지 심화 정리</option></select></div>${classDNAControls(d)}<div class="control-group"><div class="control-label"><label for="custom-prompt">조금 더 바라는 점</label><small><span id="prompt-count">${d.prompt.length}</span> / 300</small></div><textarea id="custom-prompt" maxlength="300" placeholder="정의는 교수님 표현을 유지해 줘.">${esc(d.prompt)}</textarea></div><div class="subtle-box"><h3>평소 쓰던 노트가 있나요?</h3><p>Markdown·텍스트 노트의 문장 길이와 글머리표 비율로 설정 초안을 만들어요.</p>${btn(icon("upload") + "기존 노트 가져오기", "style-import", "btn secondary")}<input type="file" id="style-file" accept=".md,.txt" hidden></div><div class="settings-footer"><small>설정은 ${esc(ui.dnaSubject)} 노트에 적용됩니다.</small>${btn("이 설정 저장하기", "save-dna", "btn primary")}</div></div><aside>${habitPanel(ui.dnaSubject, d)}<div class="preview-sheet"><div class="preview-label">${icon("file")}정리 방식 미리보기 · 예시</div><h3>페이지 교체</h3><div id="dna-preview">${dnaPreview(d)}</div></div></aside></div></section>`;
+  return scopedSettingsPage();
 }
 function learningSummary(history) {
   const shorter = history.filter((h) => h.before > h.after && h.before > 0);
@@ -627,11 +612,7 @@ function dnaPreview(d) {
   return `${d.pages ? '<span class="source-label">강의자료 · p.24</span>' : ""}<div class="preview-body"><p>${text}</p>${formats}${d.difficulty === "예시까지" ? "<p>예: A, B, C 순서로 들어왔다면 FIFO는 A를 먼저 교체한다.</p>" : d.difficulty === "쉽게 풀어서" ? "<p>새 책을 놓을 자리가 없으면, 책상 위의 다른 책을 먼저 치우는 것과 같다.</p>" : ""}${d.star ? "<p>★ FIFO와 LRU의 교체 기준을 구분하기</p>" : ""}${d.formula !== "수식만" ? `<p>${d.formula === "자세한 풀이" ? "폴트 비율 = 폴트 횟수 ÷ 전체 접근 횟수. 예를 들어 10번 접근해 2번 폴트가 발생하면 2 ÷ 10 = 20%." : "폴트 비율 = 폴트 횟수 ÷ 전체 접근 횟수"}</p>` : ""}</div>${classDNAPreview(d)}<p class="preview-note">선택한 설명량과 형식이 바로 반영됩니다.<br>추가 요청·외부 자료 보강은 AI 연결 후 적용됩니다.</p>`;
 }
 function refreshDNAPreview() {
-  const d = ui.draft;
-  $("#dna-preview").innerHTML = dnaPreview(d);
-  $("#density-label").textContent = densityLabels[d.density - 1];
-  $("#density").setAttribute("aria-valuetext", densityLabels[d.density - 1]);
-  refreshRecommendations();
+  refreshScopedPreview();
 }
 const templates = [
   {
@@ -703,20 +684,11 @@ function item(label, action, name = "text", attrs = "") {
 }
 function uploadModal() {
   ui.upload = null;
+  ui.newNoteSettings = structuredClone(noteDefaults);
+  ui.newSubjectDraft = structuredClone(subjectDefaults);
   showModal(
     "새 노트 시작하기",
-    `<label class="drop-zone" id="drop-zone" tabindex="0">${icon("upload")}<strong>강의자료를 놓거나 눌러서 선택하세요</strong><small>PDF, PPT, Word, Markdown, 텍스트, 이미지 · 최대 25MB</small><input type="file" id="material-file" accept=".pdf,.ppt,.pptx,.doc,.docx,.md,.txt,.png,.jpg,.jpeg,.webp" hidden></label><div id="picked-file"></div><div class="form-field"><label for="upload-title">노트 제목</label><input id="upload-title" placeholder="어떤 내용을 정리할까요?" maxlength="150"></div><div class="form-field"><label for="upload-subject">과목</label><select id="upload-subject">${[...new Set(["운영체제", "알고리즘", "선형대수", ...data.notes.map((n) => n.subject)])].map((s) => `<option ${s === note()?.subject ? "selected" : ""}>${esc(s)}</option>`).join("")}<option value="__new">새 과목 만들기</option></select><input id="new-subject" placeholder="새 과목 이름" maxlength="40" hidden></div><div class="control-label"><strong>자료 조사 범위</strong></div><div class="radio-cards">${[
-      ["lecture", "강의자료만", "원문을 중심으로"],
-      ["balanced", "부족한 부분만", "필요한 설명 보충"],
-      ["deep", "심화 정리", "관련 개념까지"],
-    ]
-      .map(
-        ([value, label, small]) =>
-          `<label class="radio-card"><input type="radio" name="research" value="${value}" ${value === "balanced" ? "checked" : ""}><span><strong>${label}</strong><small>${small}</small></span></label>`,
-      )
-      .join(
-        "",
-      )}</div><p class="upload-note">파일은 이 기기에 보관됩니다. 텍스트는 바로 가져오며, PDF·PPT 분석과 웹 검색은 AI 연결 후 사용할 수 있어요.</p><p id="upload-error" class="form-error" role="alert"></p>`,
+    `<label class="drop-zone" id="drop-zone" tabindex="0">${icon("upload")}<strong>강의자료를 놓거나 눌러서 선택하세요</strong><small>PDF, PPT, Word, Markdown, 텍스트, 이미지 · 최대 25MB</small><input type="file" id="material-file" accept=".pdf,.ppt,.pptx,.doc,.docx,.md,.txt,.png,.jpg,.jpeg,.webp" hidden></label><div id="picked-file"></div><div class="form-field"><label for="upload-title">노트 제목</label><input id="upload-title" placeholder="어떤 내용을 정리할까요?" maxlength="150"></div><div class="form-field"><label for="upload-subject">과목</label><select id="upload-subject">${[...new Set(["운영체제", "알고리즘", "선형대수", ...data.notes.map((n) => n.subject)])].map((s) => `<option ${s === note()?.subject ? "selected" : ""}>${esc(s)}</option>`).join("")}<option value="__new">새 과목 만들기</option></select><input id="new-subject" placeholder="새 과목 이름" maxlength="40" hidden></div><div id="new-subject-dna" hidden>${advancedSettings("새 과목의 DNA 설정", subjectFields(ui.newSubjectDraft, "new-subject"))}</div><div class="new-note-settings"><h3>이번 노트 설정</h3><div id="new-note-options">${noteFields(ui.newNoteSettings, null, true)}</div></div><p class="upload-note">파일은 이 기기에 보관됩니다. 텍스트는 바로 가져오며, PDF·PPT 분석과 웹 검색은 AI 연결 후 사용할 수 있어요.</p><p id="upload-error" class="form-error" role="alert"></p>`,
     btn("예시로 체험하기", "sample-note", "btn ghost") +
       btn("노트 만들기", "create-note", "btn primary"),
     "자료를 가져오거나 빈 노트에서 직접 기록하세요.",
@@ -753,6 +725,7 @@ function selectFile(file) {
   $("#picked-file").innerHTML =
     `<div class="file-picked">${icon("file")}<div><strong>${esc(file.name)}</strong><small>${(file.size / 1024 / 1024).toFixed(2)} MB · 이 기기에 보관</small></div>${btn(icon("close"), "clear-file", "icon-button", 'aria-label="선택한 파일 제거"')}</div>`;
   $("#upload-title").value = file.name.replace(/\.[^.]+$/, "");
+  refreshNewNoteSources();
 }
 function fileDatabase() {
   return new Promise((resolve, reject) => {
@@ -826,6 +799,28 @@ async function createNote() {
     $("#new-subject").focus();
     return;
   }
+  if (
+    ui.newNoteSettings?.scopeMode === "단원·페이지 선택" &&
+    !ui.newNoteSettings.pageRange.trim()
+  ) {
+    error.textContent = "정리할 단원이나 페이지를 입력해 주세요.";
+    return;
+  }
+  if (
+    ui.newNoteSettings?.scopeMode === "시험 범위 직접 입력" &&
+    !ui.newNoteSettings.examRange.trim()
+  ) {
+    error.textContent = "이번 시험 범위를 입력해 주세요.";
+    return;
+  }
+  if (
+    ui.newNoteSettings?.sourceMode === "selected" &&
+    !ui.newNoteSettings.sourceIds.length
+  ) {
+    error.textContent =
+      "이번 노트 설정에서 사용할 자료를 하나 이상 선택해 주세요.";
+    return;
+  }
   const submit = $('[data-action="create-note"]');
   submit.disabled = true;
   submit.textContent = "가져오는 중…";
@@ -853,7 +848,8 @@ async function createNote() {
       pages: 0,
       sample: false,
       updated: new Date().toISOString(),
-      research: $('input[name="research"]:checked').value,
+      research: dna(subject).research,
+      runSettings: structuredClone(ui.newNoteSettings || noteDefaults),
       blocks: [
         {
           id: uid(),
@@ -866,6 +862,10 @@ async function createNote() {
         },
       ],
     };
+    if ($("#upload-subject").value === "__new") {
+      data.subjectDNA ||= {};
+      data.subjectDNA[subject] = structuredClone(ui.newSubjectDraft);
+    }
     data.notes.unshift(n);
     save();
     closeModal();
@@ -1172,6 +1172,7 @@ function deleteNote(id) {
   );
 }
 function handleAction(action, el = {}) {
+  if (handleScopedAction(action, el)) return;
   if (handleStudyAction(action, el)) return;
   const n = note();
   const blockId =
@@ -1514,6 +1515,7 @@ function handleAction(action, el = {}) {
       ui.upload = null;
       $("#material-file").value = "";
       $("#picked-file").innerHTML = "";
+      refreshNewNoteSources();
       break;
     case "create-note":
       void createNote();
@@ -1524,6 +1526,10 @@ function handleAction(action, el = {}) {
       sample.id = uid();
       sample.title = "가상 메모리와 페이지 교체 · 체험";
       sample.shortTitle = "예시 노트 체험";
+      sample.runSettings = structuredClone(ui.newNoteSettings || noteDefaults);
+      sample.runSettings.sourceIds = sample.runSettings.sourceIds.filter(
+        (id) => id === "material",
+      );
       sample.updated = new Date().toISOString();
       sample.blocks.forEach((x) => (x.id = uid()));
       data.notes.unshift(sample);
@@ -1533,7 +1539,7 @@ function handleAction(action, el = {}) {
       toast("예시 노트에서 편집 흐름을 체험해 보세요.");
       break;
     case "dna-subject":
-      if (ui.draft) data.dna[ui.dnaSubject] = structuredClone(ui.draft);
+      if (ui.draft) commitScopedDraft();
       save();
       ui.dnaSubject = el.dataset.subject;
       ui.draft = structuredClone(dna(ui.dnaSubject));
@@ -1557,9 +1563,9 @@ function handleAction(action, el = {}) {
       refreshDNAPreview();
       break;
     case "save-dna":
-      data.dna[ui.dnaSubject] = structuredClone(ui.draft);
+      commitScopedDraft();
       save();
-      toast(ui.dnaSubject + " 정리 방식을 저장했어요.");
+      toast("개인 취향과 과목별 설정을 저장했어요.");
       break;
     case "style-import":
       $("#style-file").click();
@@ -1575,8 +1581,7 @@ function handleAction(action, el = {}) {
         toast("가져올 항목을 하나 이상 선택해 주세요.");
         return;
       }
-      data.dna[s] = dna(s);
-      keys.forEach((k) => (data.dna[s][k] = structuredClone(t[k])));
+      applyScopedTemplate(s, t, keys);
       save();
       closeModal();
       ui.dnaSubject = s;
@@ -1589,7 +1594,18 @@ function handleAction(action, el = {}) {
       download(
         "Note-DNA-settings.json",
         JSON.stringify(
-          { name: "나의 Note DNA", version: 1, profiles: data.dna },
+          {
+            name: "나의 Note DNA",
+            version: 2,
+            personal: personalSettings(),
+            subjects: data.subjectDNA,
+            subjectOverrides: data.personalOverrides,
+            notes: data.notes.map((n) => ({
+              id: n.id,
+              title: n.title,
+              settings: noteSettings(n),
+            })),
+          },
           null,
           2,
         ),
@@ -1689,9 +1705,13 @@ document.addEventListener("change", async (e) => {
   else if (el.id === "material-file") selectFile(el.files[0]);
   else if (el.id === "upload-subject") {
     $("#new-subject").hidden = el.value !== "__new";
+    $("#new-subject-dna").hidden = el.value !== "__new";
     if (el.value === "__new") $("#new-subject").focus();
+    updateConditionalSettings("new-note");
   } else if (el.dataset.dnaCheck) {
     ui.draft[el.dataset.dnaCheck] = el.checked;
+    if (el.dataset.dnaCheck === "learn") data.personalDNA.learn = el.checked;
+    save();
     refreshDNAPreview();
   } else if (el.id === "research-setting") {
     ui.draft.research = el.value;

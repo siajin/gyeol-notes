@@ -234,13 +234,21 @@ function planClassSync(n, d) {
       .map((b) => b.attachmentId),
   );
   const additions = buildClassBlocks(
-    classAttachments(n).filter((a) => !protectedIds.has(a.id)),
+    classAttachments(n).filter(
+      (a) => !protectedIds.has(a.id) && allowedClassSource(a, n),
+    ),
     d,
   );
   const removals = n.blocks
     .filter(
       (b) =>
-        b.classGenerated && !b.classEdited && !protectedIds.has(b.attachmentId),
+        b.classGenerated &&
+        !b.classEdited &&
+        !protectedIds.has(b.attachmentId) &&
+        (noteSettings(n).sourceMode !== "new" ||
+          classAttachments(n).some(
+            (a) => a.id === b.attachmentId && allowedClassSource(a, n),
+          )),
     )
     .map((b) => b.id);
   return {
@@ -251,8 +259,15 @@ function planClassSync(n, d) {
   };
 }
 function stageClassSync() {
+  if (
+    noteSettings().sourceMode === "selected" &&
+    !noteSettings().sourceIds.length
+  ) {
+    toast("이번 노트 설정에서 사용할 자료를 먼저 선택해 주세요.");
+    return;
+  }
   const n = note(),
-    d = dna(n.subject),
+    d = effectiveNoteDNA(n),
     plan = planClassSync(n, d);
   if (!plan.additions.length && !plan.removals.length) {
     toast(
@@ -280,6 +295,7 @@ function applyClassSync() {
   snapshot();
   n.blocks = n.blocks.filter((b) => !p.removals.includes(b.id));
   n.blocks.push(...p.additions);
+  n.classSyncAt = new Date().toISOString();
   n.updated = new Date().toISOString();
   save();
   closeModal();
@@ -383,12 +399,19 @@ function habitRecommendation(subject, d = dna(subject)) {
     !d.learn ||
     stats.count < 3 ||
     stats.percent < 20 ||
-    d.density <= 1
+    noteSettings().length === "핵심만 간단히"
   )
     return null;
-  const token = subject + "|density|" + d.density + "|" + stats.fingerprint;
+  const token =
+    subject + "|length|" + noteSettings().length + "|" + stats.fingerprint;
   if (data.recommendationDecisions?.[subject]?.token === token) return null;
-  return { ...stats, token, subject, from: d.density, to: 1 };
+  return {
+    ...stats,
+    token,
+    subject,
+    from: noteSettings().length,
+    to: "핵심만 간단히",
+  };
 }
 function recommendationContent(subject, d) {
   const r = habitRecommendation(subject, d),
@@ -397,22 +420,23 @@ function recommendationContent(subject, d) {
   if (!d.learn)
     return '<p class="settings-help">편집 습관 추천이 꺼져 있어요. 설정은 현재 값으로 유지됩니다.</p>';
   if (r)
-    return `<div class="habit-proposal"><span class="habit-tag">나에게 맞는 설정 제안</span><p>최근 ${esc(subject)} 노트 <strong>${r.count}개</strong>에서 긴 설명을 평균 <strong>${r.percent}%</strong> 줄였어요.</p><p>설명량을 ‘${densityLabels[r.from - 1]}’에서 <strong>‘핵심만’</strong>으로 바꾸는 것을 추천합니다.</p><div class="habit-actions">${btn("적용", "habit-apply", "btn primary")}${btn("무시", "habit-ignore", "btn ghost")}</div><details class="habit-evidence"><summary>추천 기준 보기</summary><p>최근 수정한 과목 노트 최대 5개를 확인합니다. 같은 블록을 여러 번 수정한 경우 최초 길이와 마지막 길이를 비교하며, 긴 설명의 감소율을 노트별로 계산해 평균을 냅니다. 사용자 메모와 첨부 필기, 형식만 바꾼 편집은 제외합니다.</p></details></div>`;
+    return `<div class="habit-proposal"><span class="habit-tag">나에게 맞는 설정 제안</span><p>최근 ${esc(subject)} 노트 <strong>${r.count}개</strong>에서 긴 설명을 평균 <strong>${r.percent}%</strong> 줄였어요.</p><p>이번 노트의 분량을 ‘${esc(r.from)}’에서 <strong>‘핵심만 간단히’</strong>로 바꾸는 것을 추천합니다.</p><div class="habit-actions">${btn("적용", "habit-apply", "btn primary")}${btn("무시", "habit-ignore", "btn ghost")}</div><details class="habit-evidence"><summary>추천 기준 보기</summary><p>최근 수정한 과목 노트 최대 5개를 확인합니다. 같은 블록을 여러 번 수정한 경우 최초 길이와 마지막 길이를 비교하며, 긴 설명의 감소율을 노트별로 계산해 평균을 냅니다. 사용자 메모와 첨부 필기, 형식만 바꾼 편집은 제외합니다.</p></details></div>`;
   let message =
     subject === "기본"
       ? "과목별 탭에서 해당 수업의 편집 습관을 확인할 수 있어요."
-      : decision?.status === "applied" && d.density === 1
-        ? "추천한 ‘핵심만’ 설정을 적용했어요."
+      : decision?.status === "applied" &&
+          noteSettings().length === "핵심만 간단히"
+        ? "이번 노트에 ‘핵심만 간단히’를 적용했어요."
         : decision?.status === "ignored" &&
             decision.fingerprint === stats.fingerprint
           ? "이번 추천을 무시했어요. 새로운 편집 기록이 쌓이면 다시 살펴볼게요."
           : stats.count < 3
             ? `긴 설명을 수정한 ${esc(subject)} 노트가 ${stats.count}개 있어요. 3개 이상 쌓이면 최근 최대 5개를 분석해 추천합니다.`
             : "최근 편집 기록을 확인했어요. 현재 설정을 바꿀 만큼 일관된 변화는 아직 없어요.";
-  return `<p class="settings-help">${message}</p><details class="habit-example"><summary>추천 예시 보기</summary><div class="habit-proposal"><span class="habit-tag">표시 예시 · 실제 편집 기록 아님</span><p>최근 운영체제 노트 5개에서 긴 설명을 평균 32% 줄였어요.</p><p>설명량을 ‘적당히’에서 ‘핵심만’으로 바꾸는 것을 추천합니다.</p><div class="habit-actions"><button class="btn primary" disabled>적용</button><button class="btn ghost" disabled>무시</button></div><small>실제 추천이 생기면 적용하거나 무시할 수 있어요.</small></div></details>`;
+  return `<p class="settings-help">${message}</p><details class="habit-example"><summary>추천 예시 보기</summary><div class="habit-proposal"><span class="habit-tag">표시 예시 · 실제 편집 기록 아님</span><p>최근 운영체제 노트 5개에서 긴 설명을 평균 32% 줄였어요.</p><p>이번 노트의 분량을 ‘적당한 분량’에서 ‘핵심만 간단히’로 바꾸는 것을 추천합니다.</p><div class="habit-actions"><button class="btn primary" disabled>적용</button><button class="btn ghost" disabled>무시</button></div><small>실제 추천이 생기면 적용하거나 무시할 수 있어요.</small></div></details>`;
 }
 function habitPanel(subject, d) {
-  return `<section class="habit-panel"><h3>${icon("history")} 편집 습관에서 발견했어요</h3><label class="check-row"><input type="checkbox" data-dna-check="learn" ${d.learn ? "checked" : ""}>내 편집 습관으로 설정 추천 받기</label><p class="settings-help">설정은 ‘적용’을 눌렀을 때만 바뀝니다.</p><div id="habit-recommendation">${recommendationContent(subject, d)}</div></section>`;
+  return `<section class="habit-panel"><h3>${icon("history")} 편집 습관에서 발견했어요</h3><label class="check-row"><input type="checkbox" data-dna-check="learn" ${d.learn ? "checked" : ""}>내 편집 습관으로 설정 추천 받기</label><p class="settings-help">추천은 ‘적용’을 누르면 이번 노트에만 반영됩니다. 기본 DNA는 바뀌지 않아요.</p><div id="habit-recommendation">${recommendationContent(subject, d)}</div></section>`;
 }
 function decideRecommendation(status) {
   const r = habitRecommendation(ui.dnaSubject, ui.draft);
@@ -429,14 +453,13 @@ function decideRecommendation(status) {
     at: new Date().toISOString(),
   };
   if (status === "applied") {
-    ui.draft.density = r.to;
-    data.dna[r.subject] = structuredClone(ui.draft);
+    note().runSettings = { ...noteSettings(), length: r.to };
   }
   save();
   render();
   toast(
     status === "applied"
-      ? "설명량을 ‘핵심만’으로 바꿨어요."
+      ? "이번 노트 분량을 ‘핵심만 간단히’로 바꿨어요."
       : "이번 추천을 무시했어요. 현재 설정을 유지합니다.",
   );
 }
@@ -476,6 +499,7 @@ function handleStudyAction(action, el) {
       toast("첨부를 삭제했어요. 이미 정리한 내용은 보관됩니다.");
       return true;
     case "class-dna":
+      ui.settingsScope = "subject";
       closeModal();
       navigate("dna");
       return true;
