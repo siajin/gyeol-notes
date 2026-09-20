@@ -4,7 +4,7 @@ const personalDefaults = {
   headingStyle: "일반적인 3단계",
   numbering: "1. → 1) → a.",
   layoutPreference: "표와 목록을 적절히 혼합",
-  emphasisStyle: "별표",
+  emphasisStyle: "굵게",
   emphasisAmount: "핵심만",
   tone: "쉬운 설명체",
   learn: true,
@@ -38,18 +38,204 @@ const personalOptions = {
   headingStyle: ["간단하게 2단계", "일반적인 3단계", "자세하게 4단계"],
   numbering: ["1. → 1) → a.", "1. → (1) → ①", "글머리표 중심"],
   layoutPreference: ["목록 중심", "표와 목록을 적절히 혼합", "표 중심"],
-  emphasisStyle: ["별표", "빨간줄"],
+  emphasisStyle: ["굵게", "형광펜", "빨간줄", "별표"],
   emphasisAmount: ["적게", "핵심만", "많이"],
   tone: ["간결한 노트체", "쉬운 설명체", "강의 필기체"],
 };
-const toneExamples = {
-  "간결한 노트체":
-    "프로세스: 실행 중인 프로그램. 메모리에 적재되며 CPU 자원을 할당받아 실행됨.",
-  "쉬운 설명체":
-    "프로세스는 현재 실행되고 있는 프로그램을 의미한다. 쉽게 말하면 프로그램이 실제로 동작하기 시작한 상태라고 볼 수 있다.",
-  "강의 필기체":
-    "프로세스 = 실행 중인 프로그램\n프로그램은 정적, 프로세스는 동적\n시험: 프로그램과 프로세스의 차이 주의",
+const toneDescriptions = {
+  "간결한 노트체": ["짧게 요점만", "핵심어와 짧은 문장으로 빠르게 훑어봐요."],
+  "쉬운 설명체": ["차근차근 설명", "낯선 개념도 문장으로 이어서 이해해요."],
+  "강의 필기체": ["수업 필기처럼", "화살표와 짧은 메모로 흐름을 잡아요."],
 };
+const optionLabels = {
+  headingStyle: {
+    "간단하게 2단계": "간단하게 · 제목과 내용",
+    "일반적인 3단계": "기본형 · 주제와 소제목",
+    "자세하게 4단계": "세분화 · 세부 항목까지",
+  },
+  layoutPreference: {
+    "목록 중심": "목록 위주",
+    "표와 목록을 적절히 혼합": "내용에 맞게 섞기",
+    "표 중심": "비교표 위주",
+  },
+  emphasisStyle: {
+    굵게: "굵은 글씨",
+    형광펜: "은은한 배경색",
+    빨간줄: "색 밑줄",
+    별표: "별표 표시",
+  },
+  emphasisAmount: {
+    적게: "꼭 필요한 곳만",
+    핵심만: "핵심마다 적당히",
+    많이: "놓치지 않게 넉넉히",
+  },
+  organization: {
+    "강의자료 순서대로": "자료 순서 유지",
+    "핵심 개념·키워드별": "비슷한 개념끼리 묶기",
+    "이해하기 좋은 흐름으로": "기초에서 응용 순서로",
+  },
+  examplePreference: {
+    "예시 없이": "예시 없이 간결하게",
+    "핵심 예시 1개": "대표 예시만",
+    "개념별 예시 2개": "헷갈리는 개념에 충분히",
+    "다양한 예시 3개 이상": "여러 상황으로 익히기",
+  },
+  formula: {
+    "결과만 표시": "핵심 수식만",
+    "의미와 사용법 설명": "기호의 뜻과 쓰임까지",
+    "유도 과정과 계산 예시": "풀이 과정을 단계별로",
+    "수식 거의 없음": "수식 설명 생략",
+  },
+  terminology: {
+    "핵심 용어만": "낯선 핵심 용어만",
+    "처음 등장할 때 설명": "처음 나올 때 짧게",
+    "모든 전문용어를 자세히 설명": "기초 개념부터 풀어서",
+  },
+  length: {
+    "핵심만 간단히": "복습용 요약",
+    "적당한 분량": "핵심과 설명을 균형 있게",
+    "최대한 자세히": "빠짐없이 상세하게",
+  },
+  questionDifficulty: {
+    기초: "기초 · 개념 확인",
+    "강의 수준": "보통 · 배운 내용 응용",
+    "시험 수준": "실전 · 시험 연습",
+    심화: "심화 · 새로운 상황에 적용",
+  },
+};
+function settingLabel(key, value) {
+  return optionLabels[key]?.[value] || value;
+}
+const previewSamples = {
+  운영체제: {
+    title: "필요한 페이지만 가져오기",
+    keyword: "요구 페이징",
+    sub: "메모리를 사용하는 방식",
+    section: "페이지가 없을 때의 처리",
+    tones: {
+      "간결한 노트체":
+        "요구 페이징: 필요한 페이지만 메모리에 적재. 없는 페이지에 접근하면 페이지 폴트 발생.",
+      "쉬운 설명체":
+        "실행에 필요한 페이지만 메모리에 올리는 방식이다. 필요한 페이지가 아직 없다면 운영체제가 가져온 뒤 작업을 이어 간다.",
+      "강의 필기체":
+        "필요한 페이지만 적재 → 메모리 절약\n페이지가 없다면? 페이지 폴트 → 적재 → 다시 실행\n기억: 페이지 폴트가 항상 잘못된 접근은 아님",
+    },
+    points: ["필요한 시점에 페이지 적재", "페이지 폴트 후 명령 재실행"],
+    table: [
+      ["메모리에 있음", "바로 접근"],
+      ["메모리에 없음", "페이지 폴트 처리"],
+    ],
+    examples: [
+      "책장 전체 대신 지금 읽는 책만 책상에 꺼내는 것과 비슷하다.",
+      "100페이지 중 3페이지만 쓰면 필요한 부분부터 올릴 수 있다.",
+      "새로운 페이지가 필요해지면 그때 추가로 가져온다.",
+    ],
+    questions: {
+      객관식: "요구 페이징의 특징으로 알맞은 것은?",
+      단답형: "필요한 페이지가 메모리에 없을 때 발생하는 예외는?",
+      주관식: "요구 페이징이 메모리 사용을 줄이는 이유를 설명하시오.",
+      OX: "페이지 폴트는 항상 잘못된 메모리 접근을 뜻한다. (O / X)",
+    },
+    combined:
+      "메모리 관리와 스케줄링을 연결해, 페이지 폴트가 실행 중인 작업에 미치는 영향을 설명하시오.",
+  },
+  알고리즘: {
+    title: "같은 계산은 한 번만",
+    keyword: "메모이제이션",
+    sub: "계산 결과의 재사용",
+    section: "중복 계산 줄이기",
+    tones: {
+      "간결한 노트체":
+        "메모이제이션: 계산 결과를 저장해 재사용. 같은 부분 문제의 반복 계산을 줄임.",
+      "쉬운 설명체":
+        "이미 구한 답을 저장했다가 같은 문제가 나오면 다시 사용하는 방법이다. 같은 계산을 반복하지 않아 시간을 줄일 수 있다.",
+      "강의 필기체":
+        "같은 계산 반복? → 답을 저장\n다음 호출 → 저장한 답 재사용\n확인: 어떤 값을 저장할지 먼저 정하기",
+    },
+    points: ["계산한 결과를 저장", "같은 입력에서는 결과 재사용"],
+    table: [
+      ["결과가 있음", "저장된 값 반환"],
+      ["결과가 없음", "계산 후 저장"],
+    ],
+    examples: [
+      "피보나치 수열에서 이미 구한 값을 저장하면 중복 호출을 줄일 수 있다.",
+      "격자의 같은 위치까지 오는 경우의 수를 저장해 활용할 수 있다.",
+      "저장 공간과 줄어드는 계산량을 함께 비교한다.",
+    ],
+    questions: {
+      객관식: "메모이제이션을 적용하기 적합한 상황은?",
+      단답형: "계산한 결과를 저장해 재사용하는 기법의 이름은?",
+      주관식: "메모이제이션에서 상태 정의가 중요한 이유를 설명하시오.",
+      OX: "메모이제이션은 이미 계산한 결과를 재사용한다. (O / X)",
+    },
+    combined:
+      "재귀와 동적 계획법을 연결해, 같은 부분 문제를 반복 계산하는 구조를 개선하시오.",
+  },
+  선형대수: {
+    title: "행렬을 변환으로 읽기",
+    keyword: "선형 변환",
+    sub: "기저벡터가 이동하는 방향",
+    section: "행렬의 열이 의미하는 것",
+    tones: {
+      "간결한 노트체":
+        "행렬의 각 열: 표준 기저벡터의 변환 결과. 벡터의 변환은 열벡터의 선형 결합으로 계산.",
+      "쉬운 설명체":
+        "행렬의 각 열은 기본 방향의 벡터가 어디로 이동하는지 알려 준다. 이 결과를 조합하면 다른 벡터가 어떻게 바뀌는지도 알 수 있다.",
+      "강의 필기체":
+        "첫째 열 = 첫 기저벡터가 간 곳\n둘째 열 = 둘째 기저벡터가 간 곳\n벡터 변환 → 각 열을 계수에 맞춰 더하기",
+    },
+    points: ["기저벡터의 이동을 먼저 확인", "선형 결합으로 전체 변환 계산"],
+    table: [
+      ["첫 번째 열", "첫 기저벡터의 변환"],
+      ["두 번째 열", "둘째 기저벡터의 변환"],
+    ],
+    examples: [
+      "대각행렬 [[2,0],[0,3]]은 x축을 2배, y축을 3배 늘린다.",
+      "벡터 (1,2)는 이 변환을 거쳐 (2,6)이 된다.",
+      "열벡터 표기에서 ABx는 B를 먼저 적용하고 A를 적용한다.",
+    ],
+    questions: {
+      객관식: "행렬의 첫 번째 열이 나타내는 것은?",
+      단답형: "표준 기저벡터 (1,0)의 변환 결과는 행렬의 몇 번째 열인가?",
+      주관식:
+        "행렬의 열만 알면 모든 벡터의 변환을 구할 수 있는 이유를 설명하시오.",
+      OX: "선형 변환은 벡터의 덧셈을 보존한다. (O / X)",
+    },
+    combined:
+      "선형 변환과 행렬식을 연결해, 변환 전후의 넓이 변화를 설명하시오.",
+  },
+};
+function previewSample(subject) {
+  return (
+    previewSamples[subject] || {
+      title: "핵심 개념을 연결하며 읽기",
+      keyword: "핵심 개념",
+      sub: "정의에서 활용까지",
+      section: "내 말로 설명하기",
+      tones: {
+        "간결한 노트체":
+          "개념 정리: 정의, 특징, 적용 조건을 함께 기록. 비슷한 개념과의 차이를 확인.",
+        "쉬운 설명체":
+          "새 개념을 배울 때는 뜻만 외우기보다 어떤 상황에서 쓰는지 함께 살펴보자. 비슷한 개념과 비교하면 차이가 더 분명해진다.",
+        "강의 필기체":
+          "정의 → 특징 → 쓰이는 상황\n비슷한 개념과 무엇이 다를까?\n마지막으로 내 말로 설명해 보기",
+      },
+      points: ["정의와 적용 조건 함께 기록", "비슷한 개념과 차이 비교"],
+      table: [
+        ["정의", "무엇을 의미하는가"],
+        ["적용", "언제 사용할 수 있는가"],
+      ],
+      examples: ["강의에서 다룬 사례를 해당 개념과 연결해 정리한다."],
+      questions: {
+        객관식: "핵심 개념의 특징으로 알맞은 것은?",
+        단답형: "이번 단원의 핵심 용어를 쓰시오.",
+        주관식: "주요 개념의 정의와 적용 조건을 설명하시오.",
+        OX: "제시된 설명이 배운 정의에 맞는지 판단하시오. (O / X)",
+      },
+      combined: "두 단원에서 배운 개념을 연결해 공통점과 차이를 설명하시오.",
+    }
+  );
+}
 const modePresets = {
   "개념 이해": {
     examplePreference: "다양한 예시 3개 이상",
@@ -59,9 +245,9 @@ const modePresets = {
     lectureWeight: 3,
     professorWeight: 3,
     classWeight: 2,
-    description: "PDF·교수님 설명 중심",
+    description: "수업 내용을 확실히 이해하기",
     detail:
-      "예시와 수식·용어 설명을 늘리고, PDF 밖의 외부 자료는 사용하지 않아요.",
+      "예시와 수식·용어 설명을 늘리고, 첨부 자료 밖의 설명는 사용하지 않아요.",
   },
   "심화 학습": {
     examplePreference: "핵심 예시 1개",
@@ -73,7 +259,7 @@ const modePresets = {
     classWeight: 2,
     description: "외부 자료로 더 깊게",
     detail:
-      "예시와 수식·용어의 기본 설명은 줄이고, PDF 밖의 학술자료와 응용 내용을 보강해요.",
+      "예시와 수식·용어의 기본 설명은 줄이고, 외부 학술자료와 응용 내용을 보강해요.",
   },
   "시험 대비": {
     examplePreference: "개념별 예시 2개",
@@ -132,7 +318,8 @@ function initializeScopedSettings() {
             ? "표와 목록을 적절히 혼합"
             : "표 중심"
           : "목록 중심"),
-      emphasisStyle: oldPersonal.emphasisStyle || "별표",
+      emphasisStyle:
+        oldPersonal.emphasisStyle || personalDefaults.emphasisStyle,
       emphasisAmount:
         oldPersonal.emphasisAmount ||
         {
@@ -313,7 +500,7 @@ function scopeSelect(scope, key, label, options, value, help = "") {
   return `<label class="dna-field"><span>${label}</span>${help ? `<small>${help}</small>` : ""}<select data-setting-scope="${scope}" data-setting-key="${key}">${options
     .map((o) => {
       const [v, t] = Array.isArray(o) ? o : [o, o];
-      return `<option value="${esc(v)}" ${String(v) === String(value) ? "selected" : ""}>${esc(t)}</option>`;
+      return `<option value="${esc(v)}" ${String(v) === String(value) ? "selected" : ""}>${esc(settingLabel(key, t))}</option>`;
     })
     .join("")}</select></label>`;
 }
@@ -323,7 +510,7 @@ function advancedSettings(label, content) {
 function personalFields(d) {
   const select = (key, label) =>
     scopeSelect("personal", key, label, personalOptions[key], d[key]);
-  return `<div class="dna-form-grid">${select("headingStyle", "제목 구조")}${select("numbering", "번호 표기 방식")}${select("layoutPreference", "표와 목록 선호도")}</div><fieldset class="dna-emphasis-group"><legend>강조 방식</legend><div class="dna-form-grid">${select("emphasisStyle", "표시 방법")}${select("emphasisAmount", "강조 정도")}</div></fieldset><fieldset class="dna-tone-group"><legend>문체</legend><p>같은 내용을 어떻게 읽고 싶은지 골라보세요.</p><div class="dna-tone-options">${personalOptions.tone.map((tone, i) => `<label class="dna-tone-card"><input type="radio" name="dna-tone" data-setting-scope="personal" data-setting-key="tone" value="${tone}" ${d.tone === tone ? "checked" : ""}><span><strong><small>0${i + 1}</small>${tone}</strong><span class="tone-sample">${esc(toneExamples[tone])}</span></span></label>`).join("")}</div></fieldset>`;
+  return `<div class="dna-form-grid">${select("headingStyle", "노트의 단계")}${select("layoutPreference", "내용을 담는 방식")}</div><fieldset class="dna-tone-group compact-tones"><legend>읽기 편한 문체</legend><p>평소 노트를 읽고 쓰는 방식에 맞춰 선택하세요.</p><div class="dna-tone-options">${personalOptions.tone.map((tone) => `<label class="dna-tone-card"><input type="radio" name="dna-tone" data-setting-scope="personal" data-setting-key="tone" value="${tone}" ${d.tone === tone ? "checked" : ""}><span><strong>${toneDescriptions[tone][0]}</strong><span class="tone-sample">${toneDescriptions[tone][1]}</span></span></label>`).join("")}</div></fieldset>${advancedSettings("번호와 강조 다듬기", `<div class="dna-form-grid">${select("numbering", "번호 표기")}${select("emphasisStyle", "강조 표시")}${select("emphasisAmount", "강조하는 빈도")}</div>`)}<p class="dna-setting-hint">미리보기의 과목을 바꿔도 이 취향은 모든 과목에 공통으로 적용돼요.</p>`;
 }
 function organizationHelp(value) {
   return value === "강의자료 순서대로"
@@ -340,12 +527,12 @@ function subjectFields(d, scope = "subject") {
   const select = (key, label, options, help = "") =>
     scopeSelect(scope, key, label, options, d[key], help);
   const weight = [
-    [0, "반영 안 함"],
-    [1, "낮게"],
-    [2, "보통"],
-    [3, "높게"],
+    [0, "제외"],
+    [1, "가볍게 참고"],
+    [2, "함께 반영"],
+    [3, "우선 반영"],
   ];
-  return `<section class="dna-section"><div class="dna-section-title"><span>01</span><h3>구조</h3><small>챕터 단위로 정리</small></div>${select("organization", "챕터 안의 정리 기준", ["강의자료 순서대로", "핵심 개념·키워드별", "이해하기 좋은 흐름으로"])}<p class="dna-inline-help" id="${scope}-organization-help">${organizationHelp(d.organization)}</p><fieldset class="dna-modes"><legend>학습 모드</legend><div class="dna-mode-options three-modes">${Object.keys(
+  return `<section class="dna-section"><div class="dna-section-title"><span>01</span><h3>정리 방향</h3><small>단원 안에서의 흐름</small></div><fieldset class="dna-modes"><legend>이번 과목의 학습 목적</legend><div class="dna-mode-options three-modes">${Object.keys(
     modePresets,
   )
     .map(
@@ -354,37 +541,42 @@ function subjectFields(d, scope = "subject") {
     )
     .join(
       "",
-    )}</div></fieldset><div id="${scope}-mode-hint" class="dna-mode-hint">${modeHint(d)}</div><p class="dna-setting-hint">모드를 바꾸면 아래 내용을 권장값으로 맞춰요. 이후 각 항목을 따로 조절할 수 있어요.</p></section><section class="dna-section"><div class="dna-section-title"><span>02</span><h3>내용</h3><small>설명과 자료의 비중</small></div><div class="dna-form-grid">${select("examplePreference", "예시 선호도", ["예시 없이", "핵심 예시 1개", "개념별 예시 2개", "다양한 예시 3개 이상"])}<div id="${scope}-formula" ${d.hasMath ? "" : "hidden"}>${select("formula", "수식 설명 수준", ["결과만 표시", "의미와 사용법 설명", "유도 과정과 계산 예시", "수식 거의 없음"])}</div>${select("terminology", "용어 설명 수준", ["핵심 용어만", "처음 등장할 때 설명", "모든 전문용어를 자세히 설명"])}${select("length", "노트 분량", ["핵심만 간단히", "적당한 분량", "최대한 자세히"])}${select(
+    )}</div></fieldset><div id="${scope}-mode-hint" class="dna-mode-hint">${modeHint(d)}</div><p class="dna-setting-hint">목적에 맞춰 아래 설정이 함께 바뀝니다. 필요한 부분은 다시 조절할 수 있어요.</p><div class="dna-direction-order">${select("organization", "내용을 배열하는 순서", ["강의자료 순서대로", "핵심 개념·키워드별", "이해하기 좋은 흐름으로"])}</div><p class="dna-inline-help" id="${scope}-organization-help">${organizationHelp(d.organization)}</p></section><section class="dna-section"><div class="dna-section-title"><span>02</span><h3>설명의 깊이</h3><small>읽기 좋은 분량과 예시</small></div><div class="dna-form-grid">${select("length", "노트 분량", ["핵심만 간단히", "적당한 분량", "최대한 자세히"])}${select("examplePreference", "예시를 넣는 정도", ["예시 없이", "핵심 예시 1개", "개념별 예시 2개", "다양한 예시 3개 이상"])}${select(
     "research",
-    "외부 자료 보강 정도",
+    "자료 밖의 설명 보충",
     [
-      ["lecture", "없음 · 외부 보강 안 함"],
-      ["balanced", "부족한 내용만 보강"],
-      ["deep", "적극적으로 보강"],
-      ["academic", "학술자료로 심화 보강"],
+      ["lecture", "첨부 자료 안에서만"],
+      ["balanced", "이해에 필요한 부분만"],
+      ["deep", "관련 개념까지 넓게"],
+      ["academic", "논문·전문 자료까지"],
     ],
-    "업로드한 PDF에 없는 내용의 보강 정도",
-  )}</div>${advancedSettings(
-    "자료 반영도 · 시각자료",
-    `<p class="settings-help">각 자료의 내용을 얼마나 우선해서 담을지 정해요.</p><div class="dna-form-grid">${select("lectureWeight", "강의자료 · PDF", weight)}${select("textbookWeight", "교재", weight)}${select("classWeight", "개인 필기", weight)}${select("professorWeight", "교수 설명", weight)}${select("visuals", "시각자료 종류", ["AI가 자동 선택", "마인드맵·개념도", "흐름도·구조도", "표·비교표", "생성하지 않음"])}${select(
-      "classPriority",
-      "개인 필기의 중요도",
+  )}</div>${advancedSettings("수식과 낯선 용어", `<div class="dna-form-grid"><div id="${scope}-formula" ${d.hasMath ? "" : "hidden"}>${select("formula", "수식은 어디까지 설명할까요?", ["결과만 표시", "의미와 사용법 설명", "유도 과정과 계산 예시", "수식 거의 없음"])}</div>${select("terminology", "용어는 얼마나 풀어쓸까요?", ["핵심 용어만", "처음 등장할 때 설명", "모든 전문용어를 자세히 설명"])}</div><label class="check-row"><input type="checkbox" data-setting-scope="${scope}" data-setting-key="hasMath" ${d.hasMath ? "checked" : ""}>수식이 있는 과목이에요</label>`)}${advancedSettings(
+    "자료의 우선순위와 시각자료",
+    `<p class="settings-help">정리할 때 더 비중 있게 참고할 자료를 골라요.</p><div class="dna-form-grid">${select("lectureWeight", "강의자료", weight)}${select("textbookWeight", "교재", weight)}${select("classWeight", "내 필기", weight)}${select("professorWeight", "교수님 설명", weight)}${select(
+      "visuals",
+      "그림으로 정리하기",
       [
-        [1, "참고"],
-        [2, "중요"],
-        [3, "최우선"],
+        ["AI가 자동 선택", "내용에 맞게 선택"],
+        ["마인드맵·개념도", "개념의 관계 보기"],
+        ["흐름도·구조도", "과정과 순서 보기"],
+        ["표·비교표", "차이점 비교하기"],
+        ["생성하지 않음", "글로만 정리"],
       ],
-    )}</div><label class="check-row"><input type="checkbox" data-setting-scope="${scope}" data-setting-key="hasMath" ${d.hasMath ? "checked" : ""}>수식이 있는 과목이에요</label><label class="check-row"><input type="checkbox" data-setting-scope="${scope}" data-setting-key="classEmphasis" ${d.classEmphasis ? "checked" : ""}>필기에 강조한 구절 우선 반영</label>`,
+    )}${select("classPriority", "내 필기의 중요도", [
+      [1, "참고 내용"],
+      [2, "중요 내용"],
+      [3, "시험 핵심 내용"],
+    ])}</div><label class="check-row"><input type="checkbox" data-setting-scope="${scope}" data-setting-key="classEmphasis" ${d.classEmphasis ? "checked" : ""}>필기에 표시한 중요한 구절을 먼저 반영</label>`,
   )}</section>`;
 }
 function learningFields(d, scope = "learning") {
-  return `<fieldset class="dna-question-types"><legend>문제 유형</legend><p>연습하고 싶은 유형을 함께 선택할 수 있어요.</p><div class="dna-type-options">${["객관식", "주관식", "OX"].map((type) => `<label><input type="checkbox" data-learning-type="${scope}" value="${type}" ${d.problemTypes.includes(type) ? "checked" : ""}>${type}</label>`).join("")}</div></fieldset><div class="dna-form-grid"><label class="dna-field"><span>문제 개수</span><div class="dna-number-wrap"><input type="number" min="0" max="100" step="1" data-setting-scope="${scope}" data-setting-key="questionCount" value="${d.questionCount}"><span>개</span></div><small>0개를 선택하면 문제를 생성하지 않아요.</small></label>${scopeSelect(scope, "questionDifficulty", "문제 난이도", ["기초", "강의 수준", "시험 수준", "심화"], d.questionDifficulty)}</div><label class="dna-field full"><span>이번 시험 범위</span><input data-setting-scope="${scope}" data-setting-key="examRange" maxlength="200" value="${esc(d.examRange)}" placeholder="예: 중간고사 2–5장, PDF 20–85페이지"><small>비워두면 등록된 자료 전체를 범위로 사용해요.</small></label><fieldset class="dna-chapter-group"><legend>출제 범위 구성</legend><div class="dna-chapter-options">${[
-    ["챕터별", "각 챕터의 개념을 따로 확인"],
-    ["챕터 융합", "여러 챕터의 개념을 연결해 응용"],
+  return `<fieldset class="dna-question-types"><legend>어떻게 확인할까요?</legend><p>빠른 확인과 직접 설명하는 연습을 함께 고를 수 있어요.</p><div class="dna-type-options">${["객관식", "단답형", "주관식", "OX"].map((type) => `<label><input type="checkbox" data-learning-type="${scope}" value="${type}" ${d.problemTypes.includes(type) ? "checked" : ""}>${type === "주관식" ? "서술형" : type}</label>`).join("")}</div></fieldset><div class="dna-form-grid"><label class="dna-field"><span>문제 개수</span><div class="dna-number-wrap"><input type="number" min="0" max="100" step="1" data-setting-scope="${scope}" data-setting-key="questionCount" value="${d.questionCount}"><span>개</span></div><small>0개를 선택하면 문제를 생성하지 않아요.</small></label>${scopeSelect(scope, "questionDifficulty", "문제 난이도", ["기초", "강의 수준", "시험 수준", "심화"], d.questionDifficulty)}</div><label class="dna-field full"><span>학습·시험 범위</span><input data-setting-scope="${scope}" data-setting-key="examRange" maxlength="200" value="${esc(d.examRange)}" placeholder="예: 중간고사 2–5장, PDF 20–85페이지"><small>비워두면 등록된 자료 전체를 범위로 사용해요.</small></label><fieldset class="dna-chapter-group"><legend>출제 범위 구성</legend><div class="dna-chapter-options">${[
+    ["챕터별", "단원마다 핵심을 확인"],
+    ["챕터 융합", "배운 개념을 연결해서 응용"],
   ]
     .map(
       ([value, help]) =>
-        `<label><input type="radio" name="${scope}-chapters" data-setting-scope="${scope}" data-setting-key="chapterMode" value="${value}" ${d.chapterMode === value ? "checked" : ""}><span><strong>${value}</strong><small>${help}</small></span></label>`,
+        `<label><input type="radio" name="${scope}-chapters" data-setting-scope="${scope}" data-setting-key="chapterMode" value="${value}" ${d.chapterMode === value ? "checked" : ""}><span><strong>${value === "챕터별" ? "단원별로 차근차근" : "여러 단원을 연결해서"}</strong><small>${help}</small></span></label>`,
     )
     .join(
       "",
@@ -419,37 +611,73 @@ function scopedSettingsPage() {
     subject: "각 챕터의 정리 흐름과 설명의 깊이를 이 과목에 맞춰요.",
     learning: "이 과목의 문제 유형, 난이도와 이번 시험 범위를 정해요.",
   };
-  return `<section class="page dna-settings"><header class="page-header"><div><span class="dna-eyebrow">NOTE DNA</span><h1>나에게 맞는 정리</h1><p>표현은 나답게, 내용은 과목에 맞게, 복습은 목적에 맞게.</p></div><span class="dna-autosave" id="dna-save-state" role="status">${icon("check")} 자동 저장</span></header><nav class="dna-scope-tabs" aria-label="개인화 설정">${scopes.map(([key, title, sub]) => btn(`<strong>${title}</strong><small>${sub}</small>`, "settings-scope", key === scope ? "active" : "", `data-scope="${key}" aria-current="${key === scope ? "page" : "false"}"`)).join("")}</nav><div class="dna-settings-layout"><div class="dna-settings-main"><div class="dna-scope-heading"><div><h2>${scopes.find((s) => s[0] === scope)[1]}</h2><p>${descriptions[scope]}</p></div>${scope === "personal" ? "" : subjectPicker()}</div>${scope === "personal" ? personalFields(personalSettings()) : scope === "subject" ? subjectFields(subjectSettings(ui.dnaSubject)) : learningFields(learningSettings(ui.dnaSubject))}${scope === "personal" && !data.basicDNAReady ? `<div class="dna-onboarding-finish">${btn("이 설정으로 시작하기" + icon("arrow"), "finish-dna", "btn primary")}</div>` : ""}<p class="dna-scope-foot">${icon("lock")}${scope === "personal" ? "모든 과목에 같은 표현 방식을 사용합니다." : esc(ui.dnaSubject) + " 과목에만 저장됩니다."}</p>${scope === "subject" ? advancedSettings("편집 습관에서 발견했어요", `<div class="dna-habit-wrap">${habitPanel(ui.dnaSubject, d)}</div>`) : ""}</div><aside class="dna-settings-aside"><div class="dna-preview-card"><div class="preview-label">${icon("file")}${scope === "learning" ? "학습 구성 미리보기" : "노트 스타일 미리보기"}</div><div id="dna-preview">${scopedPreview(d)}</div><p class="dna-preview-help">설정에 따른 예시입니다. 기존 노트 본문은 유지되며, 실제 AI 정리·문제 생성은 연결 후 제공됩니다.</p></div></aside></div></section>`;
+  return `<section class="page dna-settings"><header class="page-header"><div><span class="dna-eyebrow">NOTE DNA</span><h1>나에게 맞는 정리</h1><p>자주 쓰는 방식은 저장하고, 필요한 만큼만 조절하세요.</p></div><span class="dna-autosave" id="dna-save-state" role="status">${icon("check")} 자동 저장</span></header><nav class="dna-scope-tabs" aria-label="개인화 설정">${scopes.map(([key, title, sub]) => btn(`<strong>${title}</strong><small>${sub}</small>`, "settings-scope", key === scope ? "active" : "", `data-scope="${key}" aria-current="${key === scope ? "page" : "false"}"`)).join("")}</nav><div class="dna-settings-layout"><div class="dna-settings-main"><div class="dna-scope-heading"><div><h2>${scopes.find((s) => s[0] === scope)[1]}</h2><p>${descriptions[scope]}</p></div>${scope === "personal" ? "" : subjectPicker()}</div>${scope === "personal" ? personalFields(personalSettings()) : scope === "subject" ? subjectFields(subjectSettings(ui.dnaSubject)) : learningFields(learningSettings(ui.dnaSubject))}${scope === "personal" && !data.basicDNAReady ? `<div class="dna-onboarding-finish">${btn("이 설정으로 시작하기" + icon("arrow"), "finish-dna", "btn primary")}</div>` : ""}<p class="dna-scope-foot">${icon("lock")}${scope === "personal" ? "모든 과목에 같은 표현 방식을 사용합니다." : esc(ui.dnaSubject) + " 과목에만 저장됩니다."}</p>${scope === "subject" ? advancedSettings("편집 습관에서 발견했어요", `<div class="dna-habit-wrap">${habitPanel(ui.dnaSubject, d)}</div>`) : ""}</div><aside class="dna-settings-aside"><div class="dna-preview-card"><div class="preview-label">${icon("file")}${scope === "learning" ? "학습 구성 미리보기" : "노트 스타일 미리보기"}</div><div id="dna-preview">${scopedPreview(d)}</div><p class="dna-preview-help">설정에 따른 예시입니다. 기존 노트 본문은 유지되며, 실제 AI 정리·문제 생성은 연결 후 제공됩니다.</p></div></aside></div></section>`;
 }
-function styledTone(d) {
-  const lines = (toneExamples[d.tone] || toneExamples["쉬운 설명체"]).split(
+function styledTone(d, sample) {
+  const lines = (sample.tones[d.tone] || sample.tones["쉬운 설명체"]).split(
     "\n",
   );
   const mark = (text) =>
     d.emphasisStyle === "빨간줄"
       ? `<span class="dna-redline">${text}</span>`
-      : `<span class="dna-star-mark">★</span> ${text}`;
+      : d.emphasisStyle === "별표"
+        ? `<span class="dna-star-mark">★</span> ${text}`
+        : d.emphasisStyle === "형광펜"
+          ? `<mark class="dna-soft-mark">${text}</mark>`
+          : `<strong>${text}</strong>`;
   return lines
     .map((line, i) => {
       const text = esc(line);
-      return `<p>${d.emphasisAmount === "많이" || (d.emphasisAmount === "핵심만" && i === 0) ? mark(text) : d.emphasisAmount === "적게" && i === 0 ? text.replace("프로세스", mark("프로세스")) : text}</p>`;
+      const short = esc(line.split(/[ :：,.]/)[0]);
+      return `<p>${d.emphasisAmount === "많이" || (d.emphasisAmount === "핵심만" && i === 0) ? mark(text) : d.emphasisAmount === "적게" && i === 0 ? text.replace(short, mark(short)) : text}</p>`;
     })
     .join("");
 }
+function previewSubjectPicker() {
+  const current = ui.previewSubject || ui.dnaSubject || "운영체제";
+  const subjects = [
+    ...new Set([
+      ...Object.keys(previewSamples),
+      ...data.notes.map((n) => n.subject),
+    ]),
+  ];
+  return `<label class="dna-preview-switch"><span>예시 과목</span><select id="dna-preview-subject" aria-label="미리보기 과목">${subjects.map((s) => `<option value="${esc(s)}" ${s === current ? "selected" : ""}>${esc(s)}</option>`).join("")}</select></label>`;
+}
 function scopedPreview(d) {
   const scope = ui.settingsScope || "personal",
+    subject =
+      scope === "personal" ? ui.previewSubject || ui.dnaSubject : ui.dnaSubject,
+    sample = previewSample(subject),
     l = learningSettings(ui.dnaSubject),
     s = subjectSettings(ui.dnaSubject);
   if (scope === "learning")
-    return `<div class="dna-mini-note"><span class="dna-preview-caption">${esc(ui.dnaSubject)} · 학습 계획</span><h3>${l.questionCount ? l.questionCount + "개 문제로 복습" : "문제 생성 안 함"}</h3><div class="dna-learning-tags">${l.problemTypes.map((t) => `<span>${t}</span>`).join("")}</div><dl class="dna-plan-list"><div><dt>난이도</dt><dd>${esc(l.questionDifficulty)}</dd></div><div><dt>시험 범위</dt><dd>${esc(l.examRange || "등록된 자료 전체")}</dd></div><div><dt>출제 구성</dt><dd>${esc(l.chapterMode)}</dd></div></dl>${l.questionCount ? `<div class="dna-question-sample"><small>문항 형식 예시 · 실제 생성 아님</small><p>${l.chapterMode === "챕터 융합" ? "프로세스 관리와 메모리 관리를 연결해, 문맥 교환에 필요한 정보를 설명하시오." : l.problemTypes[0] === "OX" ? "프로세스는 실행 중인 프로그램이다. (O / X)" : l.problemTypes[0] === "주관식" ? "프로그램과 프로세스의 차이를 설명하시오." : "프로세스에 대한 설명으로 알맞은 것은?"}</p></div>` : ""}</div>`;
-  const prefix = d.numbering === "글머리표 중심" ? "• " : "1. ";
-  const sub =
-    d.numbering === "1. → (1) → ①"
-      ? "(1)"
-      : d.numbering === "글머리표 중심"
-        ? "◦"
-        : "1)";
-  return `<div class="dna-mini-note"><span class="dna-preview-caption">문체 예시 · ${esc(d.tone)}</span><h3>${prefix}프로세스 이해하기</h3>${d.headingStyle !== "간단하게 2단계" ? `<h4>${sub} 핵심 개념</h4>` : ""}${d.headingStyle === "자세하게 4단계" ? `<small>${d.numbering === "1. → (1) → ①" ? "①" : "a."} 프로그램과 프로세스</small>` : ""}<div class="dna-tone-preview">${styledTone(d)}</div>${d.layoutPreference !== "표 중심" ? "<ul><li>프로그램은 정적인 코드</li><li>프로세스는 실행 중인 상태</li></ul>" : ""}${d.layoutPreference !== "목록 중심" ? "<table><tr><th>프로그램</th><th>프로세스</th></tr><tr><td>정적</td><td>동적</td></tr></table>" : ""}${scope === "subject" ? `<div class="dna-run-summary"><strong>${esc(s.mode)} · 챕터 단위</strong><span>${esc(s.organization)}</span><span>예시 · ${esc(s.examplePreference)}</span>${s.hasMath ? `<span>수식 · ${esc(s.formula)}</span>` : ""}<span>용어 · ${esc(s.terminology)}</span><span>분량 · ${esc(s.length)}</span><span>PDF 밖 보강 · ${researchLabel(s.research)}</span><span>반영도 · PDF ${s.lectureWeight} / 교재 ${s.textbookWeight} / 필기 ${s.classWeight} / 교수 ${s.professorWeight}</span><span>시각자료 · ${esc(s.visuals)}</span></div>` : ""}</div>`;
+    return `<div class="dna-mini-note"><span class="dna-preview-caption">${esc(subject)} · 복습 계획</span><h3>${l.questionCount ? l.questionCount + "문제로 확인하기" : "이번에는 노트만 읽기"}</h3><div class="dna-learning-tags">${l.problemTypes.map((t) => `<span>${t === "주관식" ? "서술형" : esc(t)}</span>`).join("")}</div><dl class="dna-plan-list"><div><dt>난이도</dt><dd>${esc(settingLabel("questionDifficulty", l.questionDifficulty))}</dd></div><div><dt>범위</dt><dd>${esc(l.examRange || "등록된 자료 전체")}</dd></div><div><dt>출제 구성</dt><dd>${l.chapterMode === "챕터별" ? "단원별로 차근차근" : "여러 단원을 연결해서"}</dd></div></dl>${l.questionCount ? `<div class="dna-question-sample"><small>문항 형식 예시 · 실제 생성 아님</small><p>${esc(l.chapterMode === "챕터 융합" ? sample.combined : sample.questions[l.problemTypes[0]] || sample.questions["주관식"])}</p></div>` : ""}</div>`;
+  const prefix = d.numbering === "글머리표 중심" ? "• " : "1. ",
+    sub =
+      d.numbering === "1. → (1) → ①"
+        ? "(1)"
+        : d.numbering === "글머리표 중심"
+          ? "◦"
+          : "1)";
+  return `${scope === "personal" ? previewSubjectPicker() : ""}<div class="dna-mini-note"><span class="dna-preview-caption">${esc(subject)} · ${esc(sample.keyword)} 예시</span><h3>${prefix}${esc(sample.title)}</h3>${d.headingStyle !== "간단하게 2단계" ? `<h4>${sub} ${esc(sample.sub)}</h4>` : ""}${d.headingStyle === "자세하게 4단계" ? `<small>${d.numbering === "1. → (1) → ①" ? "①" : "a."} ${esc(sample.section)}</small>` : ""}<div class="dna-tone-preview">${styledTone(d, sample)}</div>${d.layoutPreference !== "표 중심" ? `<ul>${sample.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}${d.layoutPreference !== "목록 중심" ? `<table><tbody>${sample.table.map((row) => `<tr>${row.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table>` : ""}${
+    scope === "subject"
+      ? `${
+          s.examplePreference !== "예시 없이"
+            ? `<div class="dna-context-example"><small>예시</small><p>${sample.examples
+                .slice(
+                  0,
+                  s.examplePreference === "핵심 예시 1개"
+                    ? 1
+                    : s.examplePreference === "개념별 예시 2개"
+                      ? 2
+                      : 3,
+                )
+                .map(esc)
+                .join("<br>")}</p></div>`
+            : ""
+        }<div class="dna-run-summary"><strong>${esc(s.mode)}</strong><span>${esc(settingLabel("organization", s.organization))}</span><span>설명 · ${esc(settingLabel("length", s.length))}</span>${s.hasMath ? `<span>수식 · ${esc(settingLabel("formula", s.formula))}</span>` : ""}<span>용어 · ${esc(settingLabel("terminology", s.terminology))}</span><span>외부 보충 · ${researchLabel(s.research)}</span></div>`
+      : ""
+  }</div>`;
 }
 function researchLabel(value) {
   return (
@@ -640,6 +868,12 @@ function applyScopedTemplate(subject, t, keys) {
 }
 document.addEventListener("change", (e) => {
   const el = e.target;
+  if (el.id === "dna-preview-subject") {
+    ui.previewSubject = el.value;
+    refreshScopedPreview();
+    $("#dna-preview-subject")?.focus();
+    return;
+  }
   if (el.id === "settings-subject") {
     ui.dnaSubject = el.value;
     render();

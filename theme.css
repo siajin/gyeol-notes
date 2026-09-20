@@ -1831,3 +1831,73 @@ select {
     font-size: 11px;
   }
 }
+/* Short preference descriptions, with examples confined to contextual previews. */
+.compact-tones .dna-tone-options {
+  gap: 8px;
+}
+.compact-tones .dna-tone-card {
+  padding: 14px 15px;
+  align-items: flex-start;
+}
+.compact-tones .dna-tone-card .tone-sample {
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.dna-preview-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 13px 18px;
+  border-bottom: 1px solid #ecf0f7;
+}
+.dna-preview-switch > span {
+  font-size: 11px;
+  color: #8993a7;
+  white-space: nowrap;
+}
+.dna-preview-switch select {
+  max-width: 165px;
+  min-width: 0;
+  border: 1px solid #e4e8f2;
+  border-radius: 5px;
+  background: #fff;
+  padding: 7px 9px;
+  color: #64738d;
+  font-size: 12px;
+}
+.dna-soft-mark {
+  background: #fff2be;
+  color: inherit;
+  padding: 1px 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.dna-tone-preview strong {
+  color: #394a68;
+  font-weight: 600;
+}
+.dna-context-example {
+  padding: 12px 13px;
+  background: #f6f9fe;
+  border-left: 2px solid #c5d7f1;
+  margin-top: 18px;
+}
+.dna-context-example > small {
+  font-size: 11px;
+  color: #7b96b7;
+}
+.dna-context-example p {
+  font-size: 12px;
+  line-height: 1.9;
+  color: #7285a2;
+  margin: 6px 0 0;
+}
+.dna-direction-order {
+  margin-top: 23px;
+}
+.dna-section .dna-advanced + .dna-advanced {
+  margin-top: 0;
+  border-top: 0;
+}
