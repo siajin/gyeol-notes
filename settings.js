@@ -529,13 +529,101 @@ function effectiveNoteDNA(n = note(), d = dna(n?.subject)) {
   };
 }
 function commitScopedDraft() {}
+// Ordered preferences use a discrete slider; categories stay visible as radio cards.
+const stepSettingKeys = new Set([
+  "emphasisAmount",
+  "length",
+  "terminology",
+  "research",
+  "questionDifficulty",
+  "lectureWeight",
+  "textbookWeight",
+  "classWeight",
+  "professorWeight",
+  "classPriority",
+]);
+const compactChoiceLabels = {
+  headingStyle: ["2단계", "3단계", "4단계"],
+  layoutPreference: ["목록 위주", "알맞게 혼합", "표 위주"],
+  emphasisStyle: ["굵게", "형광펜", "밑줄", "별표"],
+  emphasisAmount: ["적게", "적당히", "많이"],
+  organization: ["자료 순서", "개념별", "이해 흐름"],
+  length: ["핵심만", "적당히", "자세히"],
+  terminology: ["핵심만", "첫 등장에", "자세히"],
+  formula: ["수식만", "뜻과 쓰임", "풀이까지", "생략"],
+  research: ["사용 안 함", "필요할 때", "넓게 보충", "학술 심화"],
+  questionDifficulty: ["기초", "강의 수준", "시험 수준", "심화"],
+  visuals: ["자동 선택", "개념도", "흐름도", "비교표", "사용 안 함"],
+};
 function scopeSelect(scope, key, label, options, value, help = "") {
-  return `<label class="dna-field"><span>${label}</span>${help ? `<small>${help}</small>` : ""}<select data-setting-scope="${scope}" data-setting-key="${key}">${options
-    .map((o) => {
-      const [v, t] = Array.isArray(o) ? o : [o, o];
-      return `<option value="${esc(v)}" ${String(v) === String(value) ? "selected" : ""}>${esc(settingLabel(key, t))}</option>`;
-    })
-    .join("")}</select></label>`;
+  const choices = options.map((o, i) => {
+    const [v, t] = Array.isArray(o) ? o : [o, o];
+    return {
+      value: v,
+      title: compactChoiceLabels[key]?.[i] || t,
+      detail: settingLabel(key, t),
+    };
+  });
+  const current = Math.max(
+    0,
+    choices.findIndex((o) => String(o.value) === String(value)),
+  );
+  const id = `${scope}-${key}`;
+  const detail =
+    key === "organization"
+      ? organizationHelp(value)
+      : help || choices[current].detail;
+  const isStep = stepSettingKeys.has(key);
+  const controls = isStep
+    ? `<div class="dna-step-control" style="--steps:${choices.length}"><input class="dna-step-slider" id="${id}-range" type="range" min="0" max="${choices.length - 1}" step="1" value="${current}" data-step-scope="${scope}" data-step-key="${key}" aria-labelledby="${id}-label" aria-describedby="${id}-help" aria-valuetext="${esc(choices[current].detail)}" style="--fill:${(current / (choices.length - 1)) * 100}%"><div class="dna-step-labels">${choices.map((o, i) => `<button type="button" data-action="setting-step" data-step-index="${i}" class="${current === i ? "is-selected" : ""}" tabindex="-1" aria-label="${esc(label + "：" + o.detail)}">${esc(o.title)}</button>`).join("")}</div></div>`
+    : `<div class="dna-visible-choices ${key === "numbering" ? "numbering-choices" : ""}">${choices.map((o, i) => `<label class="dna-choice-option"><input type="radio" name="${id}" data-setting-scope="${scope}" data-setting-key="${key}" value="${esc(o.value)}" ${current === i ? "checked" : ""} aria-describedby="${id}-help"><span>${esc(o.title)}</span></label>`).join("")}</div>`;
+  return `<fieldset class="dna-choice-field ${isStep ? "is-step" : "is-category"}" data-choice-scope="${scope}" data-choice-key="${key}" data-choice-options="${esc(JSON.stringify(choices))}"><legend id="${id}-label">${esc(label)}</legend>${controls}<p class="dna-choice-help" id="${id}-help">${esc(detail)}</p></fieldset>`;
+}
+function syncVisibleChoices(scope, d) {
+  for (const field of $$(`[data-choice-scope="${scope}"]`)) {
+    const key = field.dataset.choiceKey,
+      choices = JSON.parse(field.dataset.choiceOptions);
+    const index = Math.max(
+      0,
+      choices.findIndex((o) => String(o.value) === String(d[key])),
+    );
+    const range = field.querySelector("[data-step-scope]");
+    if (range) {
+      range.value = String(index);
+      range.style.setProperty(
+        "--fill",
+        `${(index / (choices.length - 1)) * 100}%`,
+      );
+      range.setAttribute("aria-valuetext", choices[index].detail);
+      for (const button of field.querySelectorAll("[data-step-index]"))
+        button.classList.toggle(
+          "is-selected",
+          Number(button.dataset.stepIndex) === index,
+        );
+    } else {
+      for (const radio of field.querySelectorAll('input[type="radio"]'))
+        radio.checked = String(radio.value) === String(d[key]);
+    }
+    field.querySelector(".dna-choice-help").textContent =
+      key === "organization" ? organizationHelp(d[key]) : choices[index].detail;
+  }
+}
+function persistStepControl(range) {
+  const choices = JSON.parse(
+    range.closest(".dna-choice-field").dataset.choiceOptions,
+  );
+  const index = Math.max(
+    0,
+    Math.min(choices.length - 1, Math.round(Number(range.value))),
+  );
+  persistSettingControl({
+    dataset: {
+      settingScope: range.dataset.stepScope,
+      settingKey: range.dataset.stepKey,
+    },
+    type: "select-one",
+    value: String(choices[index].value),
+  });
 }
 function advancedSettings(label, content) {
   return `<details class="dna-advanced"><summary>${label}<span>펼쳐보기</span></summary><div class="dna-advanced-body">${content}</div></details>`;
@@ -734,6 +822,15 @@ function refreshScopedPreview() {
   refreshRecommendations();
 }
 function handleScopedAction(action, el) {
+  if (action === "setting-step") {
+    const range = el
+      .closest(".dna-choice-field")
+      .querySelector("[data-step-scope]");
+    range.value = el.dataset.stepIndex;
+    persistStepControl(range);
+    range.focus();
+    return true;
+  }
   if (action === "subject-preset") {
     persistSettingControl({
       dataset: { settingScope: el.dataset.presetScope, settingKey: "mode" },
@@ -824,6 +921,14 @@ function persistSettingControl(el) {
     };
   } else if (scope === "new-learning")
     ui.newLearningDraft = { ...ui.newLearningDraft, [key]: value };
+  if (scope === "personal") syncVisibleChoices(scope, personalSettings());
+  if (scope === "learning" || scope === "new-learning")
+    syncVisibleChoices(
+      scope,
+      scope === "learning"
+        ? learningSettings(ui.dnaSubject)
+        : ui.newLearningDraft,
+    );
   if (!scope.startsWith("new-")) {
     const ok = save(),
       status = $("#dna-save-state");
@@ -834,6 +939,7 @@ function persistSettingControl(el) {
   } else refreshCreationSummary();
 }
 function syncSubjectControls(scope, d) {
+  syncVisibleChoices(scope, d);
   for (const button of $$(`[data-preset-scope="${scope}"]`)) {
     const active =
       d.mode === button.dataset.preset &&
@@ -1120,4 +1226,12 @@ document.addEventListener("change", (e) => {
 document.addEventListener("input", (e) => {
   if (e.target.dataset.settingKey === "exampleCount")
     persistSettingControl(e.target);
+});
+
+// Native sliders support dragging, tapping, and arrow keys without custom gesture code.
+document.addEventListener("input", (e) => {
+  if (e.target.dataset.stepScope) persistStepControl(e.target);
+});
+document.addEventListener("change", (e) => {
+  if (e.target.dataset.stepScope) persistStepControl(e.target);
 });

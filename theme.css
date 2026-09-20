@@ -2095,3 +2095,194 @@ select {
     padding: 10px 5px;
   }
 }
+/* Visible choices: sliders for levels, compact cards for categories. */
+.dna-choice-field {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  grid-column: 1 / -1;
+}
+.dna-choice-field legend {
+  padding: 0;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #38465d;
+}
+.dna-form-grid > div:has(> .dna-choice-field) {
+  min-width: 0;
+  grid-column: 1 / -1;
+}
+.dna-choice-field[data-choice-key$="Weight"],
+.dna-choice-field[data-choice-key="classPriority"] {
+  grid-column: auto;
+}
+.dna-choice-help {
+  margin: 9px 0 0;
+  color: #69768d;
+  font-size: 12px;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.dna-visible-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dna-choice-option {
+  position: relative;
+  display: flex;
+  flex: 1 1 80px;
+  min-width: 0;
+  cursor: pointer;
+}
+.dna-choice-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: 0;
+  opacity: 0;
+}
+.dna-choice-option > span {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 9px;
+  border: 1px solid #e0e5ee;
+  border-radius: 7px;
+  background: #fff;
+  color: #607088;
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.dna-choice-option:hover > span {
+  border-color: #b4c0d7;
+  background: #fafbfe;
+}
+.dna-choice-option input:checked + span {
+  background: #edf2fc;
+  border-color: #8aa3d0;
+  color: #34598f;
+  font-weight: 600;
+  box-shadow: inset 0 -2px #8aa3d0;
+}
+.dna-choice-option input:focus-visible + span {
+  outline: 2px solid #6c82b4;
+  outline-offset: 3px;
+}
+.numbering-choices .dna-choice-option {
+  flex-basis: 125px;
+}
+.dna-step-control {
+  min-width: 0;
+  padding-top: 0;
+}
+.dna-step-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: calc(100% - 100% / var(--steps));
+  height: 32px;
+  margin: 0 calc(50% / var(--steps));
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+  cursor: pointer;
+  accent-color: #738fbf;
+}
+.dna-step-slider::-webkit-slider-runnable-track {
+  height: 5px;
+  border-radius: 9px;
+  background: linear-gradient(
+    to right,
+    #8ca6d1 var(--fill),
+    #e5eaf2 var(--fill)
+  );
+}
+.dna-step-slider::-moz-range-track {
+  height: 5px;
+  border-radius: 9px;
+  background: linear-gradient(
+    to right,
+    #8ca6d1 var(--fill),
+    #e5eaf2 var(--fill)
+  );
+}
+.dna-step-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -6.5px;
+  background: #fff;
+  border: 4px solid #718ebd;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px #51668925;
+}
+.dna-step-slider::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border: 4px solid #718ebd;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px #51668925;
+}
+.dna-step-slider:focus-visible {
+  outline: 2px solid #718ebd;
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+.dna-step-labels {
+  display: grid;
+  grid-template-columns: repeat(var(--steps), minmax(0, 1fr));
+}
+.dna-step-labels button {
+  min-width: 0;
+  min-height: 32px;
+  padding: 5px 2px;
+  border: 0;
+  border-radius: 5px;
+  color: #778398;
+  font-size: 12px;
+  line-height: 1.55;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.dna-step-labels button:hover {
+  background: #f4f7fc;
+}
+.dna-step-labels button.is-selected {
+  color: #34598f;
+  font-weight: 600;
+  background: #f0f4fc;
+}
+@media (max-width: 520px) {
+  .dna-choice-option {
+    flex-basis: 76px;
+  }
+  .dna-choice-option > span {
+    font-size: 12px;
+    padding: 10px 7px;
+  }
+  .numbering-choices .dna-choice-option {
+    flex-basis: 100%;
+  }
+  .dna-step-labels button {
+    min-height: 40px;
+    font-size: 11px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dna-choice-option > span {
+    transition: none;
+  }
+}
