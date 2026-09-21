@@ -2095,45 +2095,49 @@ select {
     padding: 10px 5px;
   }
 }
-/* Visible choices: sliders for levels, compact cards for categories. */
+/* One consistent row and selection pattern across all three DNA panels. */
+.dna-settings-main .dna-form-grid,
+.modal-body .dna-form-grid {
+  display: block;
+}
+.dna-setting-row {
+  padding: 24px 0;
+  border-bottom: 1px solid #e6e9ef;
+  min-width: 0;
+}
 .dna-choice-field {
   min-width: 0;
-  margin: 0;
-  padding: 0;
   border: 0;
-  grid-column: 1 / -1;
+  padding: 0;
+  margin: 0;
 }
 .dna-choice-field legend {
+  width: 100%;
   padding: 0;
-  margin-bottom: 12px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #38465d;
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #344056;
 }
-.dna-form-grid > div:has(> .dna-choice-field) {
-  min-width: 0;
-  grid-column: 1 / -1;
-}
-.dna-choice-field[data-choice-key$="Weight"],
-.dna-choice-field[data-choice-key="classPriority"] {
-  grid-column: auto;
-}
-.dna-choice-help {
-  margin: 9px 0 0;
-  color: #69768d;
-  font-size: 12px;
-  line-height: 1.75;
-  overflow-wrap: anywhere;
+.dna-choice-field legend small {
+  float: right;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 23px;
+  color: #778297;
 }
 .dna-visible-choices {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
+  padding: 4px;
+  background: #f4f6f9;
+  border-radius: 8px;
 }
 .dna-choice-option {
   position: relative;
   display: flex;
-  flex: 1 1 80px;
+  flex: 1 1 85px;
   min-width: 0;
   cursor: pointer;
 }
@@ -2150,139 +2154,142 @@ select {
   justify-content: center;
   align-items: center;
   width: 100%;
-  min-height: 44px;
-  padding: 10px 9px;
-  border: 1px solid #e0e5ee;
-  border-radius: 7px;
-  background: #fff;
-  color: #607088;
-  font-size: 13px;
+  min-height: 42px;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: #68748a;
+  font-size: 12px;
   line-height: 1.6;
   text-align: center;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
-}
-.dna-choice-option:hover > span {
-  border-color: #b4c0d7;
-  background: #fafbfe;
-}
-.dna-choice-option input:checked + span {
-  background: #edf2fc;
-  border-color: #8aa3d0;
-  color: #34598f;
-  font-weight: 600;
-  box-shadow: inset 0 -2px #8aa3d0;
-}
-.dna-choice-option input:focus-visible + span {
-  outline: 2px solid #6c82b4;
-  outline-offset: 3px;
-}
-.numbering-choices .dna-choice-option {
-  flex-basis: 125px;
-}
-.dna-step-control {
-  min-width: 0;
-  padding-top: 0;
-}
-.dna-step-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  display: block;
-  width: calc(100% - 100% / var(--steps));
-  height: 32px;
-  margin: 0 calc(50% / var(--steps));
-  padding: 0;
-  border: 0;
-  background: transparent;
-  border-radius: 0;
-  cursor: pointer;
-  accent-color: #738fbf;
-}
-.dna-step-slider::-webkit-slider-runnable-track {
-  height: 5px;
-  border-radius: 9px;
-  background: linear-gradient(
-    to right,
-    #8ca6d1 var(--fill),
-    #e5eaf2 var(--fill)
-  );
-}
-.dna-step-slider::-moz-range-track {
-  height: 5px;
-  border-radius: 9px;
-  background: linear-gradient(
-    to right,
-    #8ca6d1 var(--fill),
-    #e5eaf2 var(--fill)
-  );
-}
-.dna-step-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
-  margin-top: -6.5px;
-  background: #fff;
-  border: 4px solid #718ebd;
-  border-radius: 50%;
-  box-shadow: 0 1px 4px #51668925;
-}
-.dna-step-slider::-moz-range-thumb {
-  box-sizing: border-box;
-  width: 18px;
-  height: 18px;
-  background: #fff;
-  border: 4px solid #718ebd;
-  border-radius: 50%;
-  box-shadow: 0 1px 4px #51668925;
-}
-.dna-step-slider:focus-visible {
-  outline: 2px solid #718ebd;
-  outline-offset: 4px;
-  border-radius: 4px;
-}
-.dna-step-labels {
-  display: grid;
-  grid-template-columns: repeat(var(--steps), minmax(0, 1fr));
-}
-.dna-step-labels button {
-  min-width: 0;
-  min-height: 32px;
-  padding: 5px 2px;
-  border: 0;
-  border-radius: 5px;
-  color: #778398;
-  font-size: 12px;
-  line-height: 1.55;
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
-.dna-step-labels button:hover {
-  background: #f4f7fc;
+.dna-choice-option:hover > span {
+  background: #eaedf3;
 }
-.dna-step-labels button.is-selected {
-  color: #34598f;
+.dna-choice-option input:checked + span {
+  background: white;
+  border-color: #b7c7e2;
+  color: #365d95;
   font-weight: 600;
-  background: #f0f4fc;
+  box-shadow: 0 1px 3px #3347660c;
+}
+.dna-choice-option input:checked + span:before {
+  content: "✓";
+  font-size: 10px;
+  margin-right: 5px;
+  flex-shrink: 0;
+}
+.dna-choice-option input:focus-visible + span {
+  outline: 2px solid #6584b4;
+  outline-offset: 2px;
+}
+.dna-choice-option:has(input:disabled) {
+  opacity: 0.45;
+  cursor: default;
+}
+.dna-choice-option:has(input:disabled):hover > span {
+  background: transparent;
+}
+.dna-choice-help {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.8;
+  color: #7a8596;
+}
+.numbering-choices .dna-choice-option {
+  flex-basis: 135px;
+}
+.dna-setting-row .dna-field {
+  gap: 12px;
+}
+.dna-setting-row .dna-field > span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #344056;
+}
+.dna-count-field .dna-number-wrap {
+  width: 128px;
+}
+.dna-count-field input {
+  padding-right: 40px;
+}
+.dna-settings-main .dna-advanced,
+.modal-body .dna-advanced:has(.dna-setting-row) {
+  margin-top: 16px;
+  border: 1px solid #e4e8ef;
+  border-radius: 8px;
+  background: #fff;
+}
+.dna-settings-main > .dna-advanced + .dna-advanced {
+  margin-top: 12px;
+  border-top: 1px solid #e4e8ef;
+}
+.dna-settings-main .dna-advanced > summary,
+.modal-body .dna-advanced:has(.dna-setting-row) > summary {
+  padding: 16px 18px;
+  color: #445168;
+  font-weight: 500;
+  background: #fafbfd;
+  border-radius: 8px;
+}
+.dna-settings-main .dna-advanced-body,
+.modal-body .dna-advanced:has(.dna-setting-row) > .dna-advanced-body {
+  padding: 0 18px;
+}
+.dna-advanced-body > .dna-setting-row:last-child,
+.dna-advanced-body > .dna-form-grid:last-child > .dna-setting-row:last-child {
+  border-bottom: 0;
+}
+.dna-preset-box {
+  background: #f7f9fd;
+  border-color: #e0e7f2;
+  margin-bottom: 0;
+}
+.dna-preset-title strong {
+  color: #465c7a;
+}
+.dna-preset-title small,
+.dna-preset-status {
+  color: #738199;
+}
+.dna-preset-buttons {
+  gap: 4px;
+}
+.dna-preset-buttons button {
+  color: #68748a;
+  border-color: #e0e6ee;
+}
+.dna-preset-buttons button.active {
+  background: white;
+  border-color: #a9bfdc;
+  color: #365d95;
+}
+.dna-preset-buttons button:hover {
+  background: #eff3fa;
+  border-color: #b7c7e2;
 }
 @media (max-width: 520px) {
+  .dna-setting-row {
+    padding: 21px 0;
+  }
   .dna-choice-option {
-    flex-basis: 76px;
+    flex-basis: calc(50% - 4px);
+  }
+  .dna-visible-choices:has(> :nth-child(3)):not(:has(> :nth-child(4)))
+    .dna-choice-option {
+    flex-basis: calc(33.333% - 4px);
   }
   .dna-choice-option > span {
-    font-size: 12px;
-    padding: 10px 7px;
-  }
-  .numbering-choices .dna-choice-option {
-    flex-basis: 100%;
-  }
-  .dna-step-labels button {
-    min-height: 40px;
+    min-height: 44px;
+    padding: 8px 5px;
     font-size: 11px;
   }
-}
-@media (prefers-reduced-motion: reduce) {
-  .dna-choice-option > span {
-    transition: none;
+  .numbering-choices .dna-choice-option {
+    flex-basis: 100% !important;
+  }
+  .dna-settings-main .dna-advanced-body {
+    padding: 0 13px;
   }
 }

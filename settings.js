@@ -529,20 +529,10 @@ function effectiveNoteDNA(n = note(), d = dna(n?.subject)) {
   };
 }
 function commitScopedDraft() {}
-// Ordered preferences use a discrete slider; categories stay visible as radio cards.
-const stepSettingKeys = new Set([
-  "emphasisAmount",
-  "length",
-  "terminology",
-  "research",
-  "questionDifficulty",
-  "lectureWeight",
-  "textbookWeight",
-  "classWeight",
-  "professorWeight",
-  "classPriority",
-]);
+// A shared choice row keeps all preferences visually consistent.
 const compactChoiceLabels = {
+  tone: ["간결한 노트체", "쉬운 설명체", "강의 필기체"],
+  chapterMode: ["챕터별", "챕터 융합"],
   headingStyle: ["2단계", "3단계", "4단계"],
   layoutPreference: ["목록 위주", "알맞게 혼합", "표 위주"],
   emphasisStyle: ["굵게", "형광펜", "밑줄", "별표"],
@@ -561,7 +551,7 @@ function scopeSelect(scope, key, label, options, value, help = "") {
     return {
       value: v,
       title: compactChoiceLabels[key]?.[i] || t,
-      detail: settingLabel(key, t),
+      detail: key === "tone" ? toneDescriptions[v][1] : settingLabel(key, t),
     };
   });
   const current = Math.max(
@@ -573,11 +563,23 @@ function scopeSelect(scope, key, label, options, value, help = "") {
     key === "organization"
       ? organizationHelp(value)
       : help || choices[current].detail;
-  const isStep = stepSettingKeys.has(key);
-  const controls = isStep
-    ? `<div class="dna-step-control" style="--steps:${choices.length}"><input class="dna-step-slider" id="${id}-range" type="range" min="0" max="${choices.length - 1}" step="1" value="${current}" data-step-scope="${scope}" data-step-key="${key}" aria-labelledby="${id}-label" aria-describedby="${id}-help" aria-valuetext="${esc(choices[current].detail)}" style="--fill:${(current / (choices.length - 1)) * 100}%"><div class="dna-step-labels">${choices.map((o, i) => `<button type="button" data-action="setting-step" data-step-index="${i}" class="${current === i ? "is-selected" : ""}" tabindex="-1" aria-label="${esc(label + "：" + o.detail)}">${esc(o.title)}</button>`).join("")}</div></div>`
-    : `<div class="dna-visible-choices ${key === "numbering" ? "numbering-choices" : ""}">${choices.map((o, i) => `<label class="dna-choice-option"><input type="radio" name="${id}" data-setting-scope="${scope}" data-setting-key="${key}" value="${esc(o.value)}" ${current === i ? "checked" : ""} aria-describedby="${id}-help"><span>${esc(o.title)}</span></label>`).join("")}</div>`;
-  return `<fieldset class="dna-choice-field ${isStep ? "is-step" : "is-category"}" data-choice-scope="${scope}" data-choice-key="${key}" data-choice-options="${esc(JSON.stringify(choices))}"><legend id="${id}-label">${esc(label)}</legend>${controls}<p class="dna-choice-help" id="${id}-help">${esc(detail)}</p></fieldset>`;
+  const controls = `<div class="dna-visible-choices ${key === "numbering" ? "numbering-choices" : ""}">${choices.map((o, i) => `<label class="dna-choice-option"><input type="radio" name="${id}" data-setting-scope="${scope}" data-setting-key="${key}" value="${esc(o.value)}" ${current === i ? "checked" : ""} aria-describedby="${id}-help"><span>${esc(o.title)}</span></label>`).join("")}</div>`;
+  return `<div class="dna-setting-row"><fieldset class="dna-choice-field" data-choice-scope="${scope}" data-choice-key="${key}" data-choice-options="${esc(JSON.stringify(choices))}"><legend id="${id}-label">${esc(label)}</legend>${controls}<p class="dna-choice-help" id="${id}-help">${esc(detail)}</p></fieldset></div>`;
+}
+function multipleChoiceRow(
+  scope,
+  key,
+  label,
+  options,
+  selected,
+  attribute,
+  help,
+  disabled = false,
+) {
+  return `<div class="dna-setting-row"><fieldset class="dna-choice-field"><legend>${esc(label)}<small>여러 개 선택</small></legend><div class="dna-visible-choices">${options.map(([value, title]) => `<label class="dna-choice-option"><input type="checkbox" ${attribute}="${scope}" value="${esc(value)}" ${selected.includes(value) ? "checked" : ""} ${disabled ? "disabled" : ""} aria-describedby="${scope}-${key}-help"><span>${esc(title)}</span></label>`).join("")}</div><p class="dna-choice-help" id="${scope}-${key}-help">${esc(help)}</p></fieldset></div>`;
+}
+function numberSettingRow(scope, key, label, value, max, help, extra = "") {
+  return `<div class="dna-setting-row"><label class="dna-field dna-count-field"><span>${esc(label)}</span><div class="dna-number-wrap"><input id="${scope}-${key}" type="number" min="0" max="${max}" step="1" data-setting-scope="${scope}" data-setting-key="${key}" value="${value}" aria-describedby="${scope}-${key}-help"><span>개</span></div></label><p class="dna-choice-help" id="${scope}-${key}-help" ${extra}>${esc(help)}</p></div>`;
 }
 function syncVisibleChoices(scope, d) {
   for (const field of $$(`[data-choice-scope="${scope}"]`)) {
@@ -587,43 +589,11 @@ function syncVisibleChoices(scope, d) {
       0,
       choices.findIndex((o) => String(o.value) === String(d[key])),
     );
-    const range = field.querySelector("[data-step-scope]");
-    if (range) {
-      range.value = String(index);
-      range.style.setProperty(
-        "--fill",
-        `${(index / (choices.length - 1)) * 100}%`,
-      );
-      range.setAttribute("aria-valuetext", choices[index].detail);
-      for (const button of field.querySelectorAll("[data-step-index]"))
-        button.classList.toggle(
-          "is-selected",
-          Number(button.dataset.stepIndex) === index,
-        );
-    } else {
-      for (const radio of field.querySelectorAll('input[type="radio"]'))
-        radio.checked = String(radio.value) === String(d[key]);
-    }
+    for (const radio of field.querySelectorAll('input[type="radio"]'))
+      radio.checked = String(radio.value) === String(d[key]);
     field.querySelector(".dna-choice-help").textContent =
       key === "organization" ? organizationHelp(d[key]) : choices[index].detail;
   }
-}
-function persistStepControl(range) {
-  const choices = JSON.parse(
-    range.closest(".dna-choice-field").dataset.choiceOptions,
-  );
-  const index = Math.max(
-    0,
-    Math.min(choices.length - 1, Math.round(Number(range.value))),
-  );
-  persistSettingControl({
-    dataset: {
-      settingScope: range.dataset.stepScope,
-      settingKey: range.dataset.stepKey,
-    },
-    type: "select-one",
-    value: String(choices[index].value),
-  });
 }
 function advancedSettings(label, content) {
   return `<details class="dna-advanced"><summary>${label}<span>펼쳐보기</span></summary><div class="dna-advanced-body">${content}</div></details>`;
@@ -631,7 +601,7 @@ function advancedSettings(label, content) {
 function personalFields(d) {
   const select = (key, label) =>
     scopeSelect("personal", key, label, personalOptions[key], d[key]);
-  return `<div class="dna-form-grid">${select("headingStyle", "노트의 단계")}${select("layoutPreference", "내용을 담는 방식")}</div><fieldset class="dna-tone-group compact-tones"><legend>읽기 편한 문체</legend><p>평소 노트를 읽고 쓰는 방식에 맞춰 선택하세요.</p><div class="dna-tone-options">${personalOptions.tone.map((tone) => `<label class="dna-tone-card"><input type="radio" name="dna-tone" data-setting-scope="personal" data-setting-key="tone" value="${tone}" ${d.tone === tone ? "checked" : ""}><span><strong>${toneDescriptions[tone][0]}</strong><span class="tone-sample">${toneDescriptions[tone][1]}</span></span></label>`).join("")}</div></fieldset>${advancedSettings("번호와 강조 다듬기", `<div class="dna-form-grid">${select("numbering", "번호 표기")}${select("emphasisStyle", "강조 표시")}${select("emphasisAmount", "강조하는 빈도")}</div>`)}<p class="dna-setting-hint">미리보기의 과목을 바꿔도 이 취향은 모든 과목에 공통으로 적용돼요.</p>`;
+  return `<div class="dna-form-grid">${select("headingStyle", "제목 구조")}${select("layoutPreference", "표와 목록")}${select("tone", "문체")}</div>${advancedSettings("번호와 강조", `<div class="dna-form-grid">${select("numbering", "번호 표기")}${select("emphasisStyle", "강조 표시")}${select("emphasisAmount", "강조하는 빈도")}</div>`)}<p class="dna-setting-hint">모든 과목에 같은 표현 방식을 사용해요.</p>`;
 }
 function organizationHelp(value) {
   return value === "강의자료 순서대로"
@@ -688,7 +658,17 @@ function subjectFields(d, scope = "subject") {
       ["deep", "관련 개념까지 넓게"],
       ["academic", "논문·전문 자료까지"],
     ],
-  )}</div>${exampleControls(d, scope)}${advancedSettings("수식과 낯선 용어", `<div class="dna-form-grid"><div id="${scope}-formula" ${d.hasMath ? "" : "hidden"}>${select("formula", "수식은 어디까지 설명할까요?", ["결과만 표시", "의미와 사용법 설명", "유도 과정과 계산 예시", "수식 거의 없음"])}</div>${select("terminology", "용어는 얼마나 풀어쓸까요?", ["핵심 용어만", "처음 등장할 때 설명", "모든 전문용어를 자세히 설명"])}</div><label class="check-row"><input type="checkbox" data-setting-scope="${scope}" data-setting-key="hasMath" ${d.hasMath ? "checked" : ""}>수식이 있는 과목이에요</label>`)}${advancedSettings(
+  )}</div>${exampleControls(d, scope)}${advancedSettings(
+    "수식과 낯선 용어",
+    `<div class="dna-form-grid"><div id="${scope}-formula" ${d.hasMath ? "" : "hidden"}>${select("formula", "수식은 어디까지 설명할까요?", ["결과만 표시", "의미와 사용법 설명", "유도 과정과 계산 예시", "수식 거의 없음"])}</div>${select("terminology", "용어는 얼마나 풀어쓸까요?", ["핵심 용어만", "처음 등장할 때 설명", "모든 전문용어를 자세히 설명"])}</div>${select(
+      "hasMath",
+      "수식이 있는 과목",
+      [
+        [true, "있음"],
+        [false, "없음"],
+      ],
+    )}`,
+  )}${advancedSettings(
     "자료의 우선순위와 시각자료",
     `<p class="settings-help">정리할 때 더 비중 있게 참고할 자료를 골라요.</p><div class="dna-form-grid">${select("lectureWeight", "강의자료", weight)}${select("textbookWeight", "교재", weight)}${select("classWeight", "내 필기", weight)}${select("professorWeight", "교수님 설명", weight)}${select(
       "visuals",
@@ -704,21 +684,36 @@ function subjectFields(d, scope = "subject") {
       [1, "참고 내용"],
       [2, "중요 내용"],
       [3, "시험 핵심 내용"],
-    ])}</div><label class="check-row"><input type="checkbox" data-setting-scope="${scope}" data-setting-key="classEmphasis" ${d.classEmphasis ? "checked" : ""}>필기에 표시한 중요한 구절을 먼저 반영</label>`,
+    ])}</div>${select("classEmphasis", "필기의 강조 구절 우선 반영", [
+      [true, "사용"],
+      [false, "사용 안 함"],
+    ])}`,
   )}<p class="dna-setting-hint">원하는 항목만 바꿔도 바로 저장돼요. 기본 DNA와 학습 DNA는 그대로 유지됩니다.</p>`;
 }
 function learningFields(d, scope = "learning") {
-  return `<fieldset class="dna-question-types"><legend>어떻게 확인할까요?</legend><p>빠른 확인과 직접 설명하는 연습을 함께 고를 수 있어요.</p><div class="dna-type-options">${["객관식", "단답형", "주관식", "OX"].map((type) => `<label><input type="checkbox" data-learning-type="${scope}" value="${type}" ${d.problemTypes.includes(type) ? "checked" : ""}>${type === "주관식" ? "서술형" : type}</label>`).join("")}</div></fieldset><div class="dna-form-grid"><label class="dna-field"><span>문제 개수</span><div class="dna-number-wrap"><input type="number" min="0" max="100" step="1" data-setting-scope="${scope}" data-setting-key="questionCount" value="${d.questionCount}"><span>개</span></div><small>0개를 선택하면 문제를 생성하지 않아요.</small></label>${scopeSelect(scope, "questionDifficulty", "문제 난이도", ["기초", "강의 수준", "시험 수준", "심화"], d.questionDifficulty)}</div><label class="dna-field full"><span>학습·시험 범위</span><input data-setting-scope="${scope}" data-setting-key="examRange" maxlength="200" value="${esc(d.examRange)}" placeholder="예: 중간고사 2–5장, PDF 20–85페이지"><small>비워두면 등록된 자료 전체를 범위로 사용해요.</small></label><fieldset class="dna-chapter-group"><legend>출제 범위 구성</legend><div class="dna-chapter-options">${[
-    ["챕터별", "단원마다 핵심을 확인"],
-    ["챕터 융합", "배운 개념을 연결해서 응용"],
-  ]
-    .map(
-      ([value, help]) =>
-        `<label><input type="radio" name="${scope}-chapters" data-setting-scope="${scope}" data-setting-key="chapterMode" value="${value}" ${d.chapterMode === value ? "checked" : ""}><span><strong>${value === "챕터별" ? "단원별로 차근차근" : "여러 단원을 연결해서"}</strong><small>${help}</small></span></label>`,
-    )
-    .join(
-      "",
-    )}</div></fieldset><p class="dna-setting-hint">학습 모드와 별도로 저장됩니다. 모드를 바꿔도 문제 유형과 시험 범위는 유지돼요.</p>`;
+  return `${multipleChoiceRow(
+    scope,
+    "problemTypes",
+    "문제 유형",
+    [
+      ["객관식", "객관식"],
+      ["단답형", "단답형"],
+      ["주관식", "서술형"],
+      ["OX", "OX"],
+    ],
+    d.problemTypes,
+    "data-learning-type",
+    "원하는 유형을 함께 고를 수 있어요.",
+  )}${numberSettingRow(scope, "questionCount", "문제 개수", d.questionCount, 100, "0개는 문제 없이 · 최대 100개")}${scopeSelect(scope, "questionDifficulty", "문제 난이도", ["기초", "강의 수준", "시험 수준", "심화"], d.questionDifficulty)}<div class="dna-setting-row"><label class="dna-field"><span>학습·시험 범위</span><input data-setting-scope="${scope}" data-setting-key="examRange" maxlength="200" value="${esc(d.examRange)}" placeholder="예: 중간고사 2–5장, PDF 20–85페이지"><small>비워두면 등록된 자료 전체를 사용해요.</small></label></div>${scopeSelect(
+    scope,
+    "chapterMode",
+    "출제 범위 구성",
+    [
+      ["챕터별", "단원마다 핵심을 확인"],
+      ["챕터 융합", "여러 단원의 개념을 연결해서 응용"],
+    ],
+    d.chapterMode,
+  )}<p class="dna-setting-hint">과목의 학습 모드를 바꿔도 문제와 시험 설정은 유지돼요.</p>`;
 }
 function subjectPicker() {
   const subjects = [
@@ -822,15 +817,6 @@ function refreshScopedPreview() {
   refreshRecommendations();
 }
 function handleScopedAction(action, el) {
-  if (action === "setting-step") {
-    const range = el
-      .closest(".dna-choice-field")
-      .querySelector("[data-step-scope]");
-    range.value = el.dataset.stepIndex;
-    persistStepControl(range);
-    range.focus();
-    return true;
-  }
   if (action === "subject-preset") {
     persistSettingControl({
       dataset: { settingScope: el.dataset.presetScope, settingKey: "mode" },
@@ -877,6 +863,8 @@ function persistSettingControl(el) {
         : subjectDefaults;
   if (!(key in defaults) || (el.type === "radio" && !el.checked)) return;
   let value = el.type === "checkbox" ? el.checked : el.value;
+  if (typeof defaults[key] === "boolean" && el.type !== "checkbox")
+    value = value === "true";
   if (typeof defaults[key] === "number") {
     const v = Number(value);
     if (value === "" || !Number.isFinite(v)) return;
@@ -950,7 +938,7 @@ function syncSubjectControls(scope, d) {
   for (const el of $$(`[data-setting-scope="${scope}"]`)) {
     const val = d[el.dataset.settingKey];
     if (el.type === "checkbox") el.checked = Boolean(val);
-    else if (el.type === "radio") el.checked = el.value === val;
+    else if (el.type === "radio") el.checked = String(el.value) === String(val);
     else if (el.tagName === "SELECT") {
       const options = [...el.querySelectorAll("option")];
       for (const option of options) option.selected = false;
@@ -962,8 +950,9 @@ function syncSubjectControls(scope, d) {
     el.checked = d.exampleTypes.includes(el.value);
     el.disabled = d.exampleCount === 0;
   }
-  const summary = $("#" + scope + "-example-summary");
-  if (summary) summary.textContent = exampleSummary(d);
+  const summary = $(`[data-example-summary="${scope}"]`);
+  if (summary)
+    summary.textContent = exampleSummary(d) + " 0~10개 중 선택할 수 있어요.";
   const formula = $("#" + scope + "-formula");
   if (formula) formula.hidden = !d.hasMath;
   const hint = $("#" + scope + "-mode-hint");
@@ -1139,13 +1128,27 @@ function exampleSummary(d) {
     : "개념 하나당 선택한 종류를 섞어 총 " + d.exampleCount + "개를 넣어요.";
 }
 function exampleControls(d, scope) {
-  const descriptions = {
-    비유: "익숙한 것에 빗대어",
-    "실생활 사례": "현실의 구체적인 상황",
-    "단계별 풀이": "과정을 따라가며",
-    응용: "새로운 상황에 적용",
-  };
-  return `<fieldset class="dna-example-settings"><legend>예시</legend><div class="dna-example-kind-grid">${exampleKinds.map((type) => `<label><input type="checkbox" data-example-scope="${scope}" value="${type}" ${d.exampleTypes.includes(type) ? "checked" : ""} ${d.exampleCount === 0 ? "disabled" : ""}><span><strong>${type}</strong><small>${descriptions[type]}</small></span></label>`).join("")}</div><div class="dna-example-count"><label for="${scope}-example-count">개념당 예시 수</label><div class="dna-number-wrap"><input id="${scope}-example-count" type="number" min="0" max="10" step="1" data-setting-scope="${scope}" data-setting-key="exampleCount" value="${d.exampleCount}"><span>개</span></div></div><p class="dna-setting-hint" id="${scope}-example-summary">${exampleSummary(d)}</p><small class="dna-example-limit">0개는 예시 없이 · 최대 10개</small></fieldset>`;
+  return (
+    multipleChoiceRow(
+      scope,
+      "exampleTypes",
+      "예시 종류",
+      exampleKinds.map((t) => [t, t]),
+      d.exampleTypes,
+      "data-example-scope",
+      "비유로 쉽게 이해하고, 풀이와 응용으로 연결해요.",
+      d.exampleCount === 0,
+    ) +
+    numberSettingRow(
+      scope,
+      "exampleCount",
+      "개념당 예시 수",
+      d.exampleCount,
+      10,
+      exampleSummary(d) + " 0~10개 중 선택할 수 있어요.",
+      'data-example-summary="' + scope + '"',
+    )
+  );
 }
 function exampleTypeText(subject, type) {
   const examples = {
@@ -1226,12 +1229,4 @@ document.addEventListener("change", (e) => {
 document.addEventListener("input", (e) => {
   if (e.target.dataset.settingKey === "exampleCount")
     persistSettingControl(e.target);
-});
-
-// Native sliders support dragging, tapping, and arrow keys without custom gesture code.
-document.addEventListener("input", (e) => {
-  if (e.target.dataset.stepScope) persistStepControl(e.target);
-});
-document.addEventListener("change", (e) => {
-  if (e.target.dataset.stepScope) persistStepControl(e.target);
 });
