@@ -2293,3 +2293,43 @@ select {
     padding: 0 13px;
   }
 }
+/* Accordion labels and compact per-level numbering. */
+.dna-advanced > summary i {
+  font-style: normal;
+}
+.dna-advanced > summary .dna-collapse-text {
+  display: none;
+}
+.dna-advanced[open] > summary .dna-expand-text {
+  display: none;
+}
+.dna-advanced[open] > summary .dna-collapse-text {
+  display: inline;
+}
+.dna-advanced-body > .dna-preset-box {
+  margin-top: 18px;
+}
+.dna-numbering-levels .numbering-choices {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+.dna-numbering-levels .dna-choice-option > span {
+  padding: 9px 3px;
+  font-size: 13px;
+}
+.dna-numbering-levels .dna-choice-option input:checked + span:before {
+  display: none;
+}
+.dna-numbering-levels .dna-choice-help {
+  display: none;
+}
+.dna-fourth-level {
+  font-size: 11px;
+  color: #68778e;
+  margin: 12px 0 0 12px;
+}
+@media (max-width: 520px) {
+  .dna-numbering-levels .numbering-choices {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

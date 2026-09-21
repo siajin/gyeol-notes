@@ -1,8 +1,12 @@
 "use strict";
-// Version 5: stable personal style, course content, and independent learning DNA.
+// Version 6: stable personal style, course content, and independent learning DNA.
 const personalDefaults = {
   headingStyle: "일반적인 3단계",
   numbering: "1. → 1) → a.",
+  numberingLevel1: "1.",
+  numberingLevel2: "1)",
+  numberingLevel3: "a.",
+  numberingLevel4: "•",
   layoutPreference: "표와 목록을 적절히 혼합",
   emphasisStyle: "굵게",
   emphasisAmount: "핵심만",
@@ -52,9 +56,9 @@ const toneDescriptions = {
 };
 const optionLabels = {
   headingStyle: {
-    "간단하게 2단계": "간단하게 · 제목과 내용",
-    "일반적인 3단계": "기본형 · 주제와 소제목",
-    "자세하게 4단계": "세분화 · 세부 항목까지",
+    "간단하게 2단계": "큰 주제 중심으로 간단히 구분",
+    "일반적인 3단계": "주제와 소주제를 적절히 구분",
+    "자세하게 4단계": "세부 내용까지 촘촘하게 구분",
   },
   layoutPreference: {
     "목록 중심": "목록 위주",
@@ -295,7 +299,11 @@ function pickSettings(source, defaults) {
   );
 }
 function initializeScopedSettings() {
-  if (data.settingsVersion === 5) return;
+  if (data.settingsVersion === 6) return;
+  if (data.settingsVersion === 5) {
+    upgradeNumberingSettings();
+    return;
+  }
   if (data.settingsVersion === 4) {
     upgradeExampleSettings();
     return;
@@ -348,6 +356,10 @@ function initializeScopedSettings() {
     },
     personalDefaults,
   );
+  for (let level = 1; level <= 4; level++) {
+    const key = "numberingLevel" + level;
+    if (oldPersonal[key] === undefined) delete data.personalDNA[key];
+  }
   data.subjectDNA = {};
   data.learningDNA = {};
   const subjects = new Set([
@@ -449,7 +461,27 @@ function upgradeExampleSettings() {
         ...(modePresets[d.mode]?.exampleTypes || subjectDefaults.exampleTypes),
       ];
   }
-  data.settingsVersion = 5;
+  upgradeNumberingSettings();
+}
+function upgradeNumberingSettings() {
+  data.personalDNA ||= {};
+  const p = data.personalDNA;
+  const levels =
+    p.numbering === "글머리표 중심"
+      ? ["•", "•", "•", "•"]
+      : p.numbering === "1. → (1) → ①"
+        ? ["1.", "(1)", "①", "•"]
+        : ["1.", "1)", "a.", "•"];
+  levels.forEach((value, i) => (p["numberingLevel" + (i + 1)] ??= value));
+  data.settingsVersion = 6;
+}
+const numberingOptions = ["1.", "1)", "(1)", "①", "a.", "가.", "•", "없음"];
+function numberingControls(d) {
+  return `<div class="dna-numbering-levels">${[1, 2, 3, 4].map((level) => scopeSelect("personal", "numberingLevel" + level, level + "단계 번호", numberingOptions, d["numberingLevel" + level])).join("")}</div><p class="dna-setting-hint">단계마다 번호·글머리표·번호 없음을 따로 선택해요.</p>`;
+}
+function numberingPrefix(d, level) {
+  const value = d["numberingLevel" + level];
+  return !value || value === "없음" ? "" : esc(value) + " ";
 }
 function personalSettings() {
   return { ...personalDefaults, ...data.personalDNA };
@@ -479,7 +511,7 @@ function deriveDNA(personal, subject) {
     bold: personal.emphasisAmount !== "적게",
     star: personal.emphasisStyle === "별표",
     emphasis: personal.emphasisAmount === "적게" ? "최소한으로" : "핵심만 강조",
-    examples: subject.exampleCount > 0,
+    examples: subject.exampleCount > 0 && subject.exampleTypes.length > 0,
     density:
       subject.length === "핵심만 간단히"
         ? 1
@@ -518,6 +550,7 @@ function effectiveNoteDNA(n = note(), d = dna(n?.subject)) {
     r = noteSettings(n);
   return {
     ...d,
+    exampleCount: d.exampleTypes.length ? d.exampleCount : 0,
     formula: d.hasMath ? d.formula : "수식 거의 없음",
     research: r.sourceMode === "all" ? d.research : "lecture",
     problemTypes: l.problemTypes,
@@ -533,7 +566,7 @@ function commitScopedDraft() {}
 const compactChoiceLabels = {
   tone: ["간결한 노트체", "쉬운 설명체", "강의 필기체"],
   chapterMode: ["챕터별", "챕터 융합"],
-  headingStyle: ["2단계", "3단계", "4단계"],
+  headingStyle: ["적게", "보통", "자세히"],
   layoutPreference: ["목록 위주", "알맞게 혼합", "표 위주"],
   emphasisStyle: ["굵게", "형광펜", "밑줄", "별표"],
   emphasisAmount: ["적게", "적당히", "많이"],
@@ -563,7 +596,7 @@ function scopeSelect(scope, key, label, options, value, help = "") {
     key === "organization"
       ? organizationHelp(value)
       : help || choices[current].detail;
-  const controls = `<div class="dna-visible-choices ${key === "numbering" ? "numbering-choices" : ""}">${choices.map((o, i) => `<label class="dna-choice-option"><input type="radio" name="${id}" data-setting-scope="${scope}" data-setting-key="${key}" value="${esc(o.value)}" ${current === i ? "checked" : ""} aria-describedby="${id}-help"><span>${esc(o.title)}</span></label>`).join("")}</div>`;
+  const controls = `<div class="dna-visible-choices ${key.startsWith("numbering") ? "numbering-choices" : ""}">${choices.map((o, i) => `<label class="dna-choice-option"><input type="radio" name="${id}" data-setting-scope="${scope}" data-setting-key="${key}" value="${esc(o.value)}" ${current === i ? "checked" : ""} aria-describedby="${id}-help"><span>${esc(o.title)}</span></label>`).join("")}</div>`;
   return `<div class="dna-setting-row"><fieldset class="dna-choice-field" data-choice-scope="${scope}" data-choice-key="${key}" data-choice-options="${esc(JSON.stringify(choices))}"><legend id="${id}-label">${esc(label)}</legend>${controls}<p class="dna-choice-help" id="${id}-help">${esc(detail)}</p></fieldset></div>`;
 }
 function multipleChoiceRow(
@@ -595,13 +628,25 @@ function syncVisibleChoices(scope, d) {
       key === "organization" ? organizationHelp(d[key]) : choices[index].detail;
   }
 }
-function advancedSettings(label, content) {
-  return `<details class="dna-advanced"><summary>${label}<span>펼쳐보기</span></summary><div class="dna-advanced-body">${content}</div></details>`;
+function advancedSettings(label, content, group = "", open = false) {
+  return `<details class="dna-advanced" ${group ? `name="${group}" data-accordion-group="${group}"` : ""} ${open ? "open" : ""}><summary>${label}<span><i class="dna-expand-text">펼치기</i><i class="dna-collapse-text">접기</i></span></summary><div class="dna-advanced-body">${content}</div></details>`;
 }
 function personalFields(d) {
   const select = (key, label) =>
     scopeSelect("personal", key, label, personalOptions[key], d[key]);
-  return `<div class="dna-form-grid">${select("headingStyle", "제목 구조")}${select("layoutPreference", "표와 목록")}${select("tone", "문체")}</div>${advancedSettings("번호와 강조", `<div class="dna-form-grid">${select("numbering", "번호 표기")}${select("emphasisStyle", "강조 표시")}${select("emphasisAmount", "강조하는 빈도")}</div>`)}<p class="dna-setting-hint">모든 과목에 같은 표현 방식을 사용해요.</p>`;
+  return (
+    advancedSettings(
+      "기본",
+      `${select("headingStyle", "단락 구분 정도")}${select("tone", "문체")}`,
+      "dna-personal",
+      true,
+    ) +
+    advancedSettings(
+      "번호·배치·강조",
+      `${numberingControls(d)}${select("layoutPreference", "표와 목록")}${select("emphasisStyle", "강조 표시")}${select("emphasisAmount", "강조하는 빈도")}`,
+      "dna-personal",
+    )
+  );
 }
 function organizationHelp(value) {
   return value === "강의자료 순서대로"
@@ -628,15 +673,16 @@ function modeHint(d) {
     : "<span>개별 항목을 조절한 맞춤 설정이에요. 다른 구성이 필요하면 위에서 다시 골라주세요.</span>";
 }
 function subjectFields(d, scope = "subject") {
-  const select = (key, label, options, help = "") =>
-    scopeSelect(scope, key, label, options, d[key], help);
+  const select = (key, label, options) =>
+    scopeSelect(scope, key, label, options, d[key]);
+  const group = "dna-" + scope;
   const weight = [
     [0, "제외"],
     [1, "가볍게 참고"],
     [2, "함께 반영"],
     [3, "우선 반영"],
   ];
-  return `<div class="dna-preset-box"><div class="dna-preset-title"><strong>한 번에 맞추기</strong><small>예시·설명·분량·자료 반영을 함께 설정</small></div><div class="dna-preset-buttons" role="group" aria-label="내용 설정 프리셋">${Object.keys(
+  const presets = `<div class="dna-preset-box"><div class="dna-preset-title"><strong>한 번에 맞추기</strong><small>예시·설명·분량·자료 반영을 함께 설정</small></div><div class="dna-preset-buttons" role="group" aria-label="내용 설정 프리셋">${Object.keys(
     modePresets,
   )
     .map((mode) =>
@@ -649,71 +695,109 @@ function subjectFields(d, scope = "subject") {
     )
     .join(
       "",
-    )}</div><div class="dna-preset-status" id="${scope}-mode-hint" role="status">${modeHint(d)}</div></div><div class="dna-form-grid course-settings-flat">${select("organization", "내용을 배열하는 순서", ["강의자료 순서대로", "핵심 개념·키워드별", "이해하기 좋은 흐름으로"])}${select("length", "노트 분량", ["핵심만 간단히", "적당한 분량", "최대한 자세히"])}${select(
-    "research",
-    "자료 밖의 설명 보충",
-    [
-      ["lecture", "첨부 자료 안에서만"],
-      ["balanced", "이해에 필요한 부분만"],
-      ["deep", "관련 개념까지 넓게"],
-      ["academic", "논문·전문 자료까지"],
-    ],
-  )}</div>${exampleControls(d, scope)}${advancedSettings(
-    "수식과 낯선 용어",
-    `<div class="dna-form-grid"><div id="${scope}-formula" ${d.hasMath ? "" : "hidden"}>${select("formula", "수식은 어디까지 설명할까요?", ["결과만 표시", "의미와 사용법 설명", "유도 과정과 계산 예시", "수식 거의 없음"])}</div>${select("terminology", "용어는 얼마나 풀어쓸까요?", ["핵심 용어만", "처음 등장할 때 설명", "모든 전문용어를 자세히 설명"])}</div>${select(
-      "hasMath",
-      "수식이 있는 과목",
-      [
+    )}</div><div class="dna-preset-status" id="${scope}-mode-hint" role="status">${modeHint(d)}</div></div>`;
+  return (
+    advancedSettings(
+      "기본",
+      presets +
+        select("organization", "내용을 배열하는 순서", [
+          "강의자료 순서대로",
+          "핵심 개념·키워드별",
+          "이해하기 좋은 흐름으로",
+        ]) +
+        select("length", "노트 분량", [
+          "핵심만 간단히",
+          "적당한 분량",
+          "최대한 자세히",
+        ]),
+      group,
+      true,
+    ) +
+    advancedSettings(
+      "수식과 용어",
+      select("hasMath", "수식이 있는 과목", [
         [true, "있음"],
         [false, "없음"],
-      ],
-    )}`,
-  )}${advancedSettings(
-    "자료의 우선순위와 시각자료",
-    `<p class="settings-help">정리할 때 더 비중 있게 참고할 자료를 골라요.</p><div class="dna-form-grid">${select("lectureWeight", "강의자료", weight)}${select("textbookWeight", "교재", weight)}${select("classWeight", "내 필기", weight)}${select("professorWeight", "교수님 설명", weight)}${select(
-      "visuals",
-      "그림으로 정리하기",
-      [
-        ["AI가 자동 선택", "내용에 맞게 선택"],
-        ["마인드맵·개념도", "개념의 관계 보기"],
-        ["흐름도·구조도", "과정과 순서 보기"],
-        ["표·비교표", "차이점 비교하기"],
-        ["생성하지 않음", "글로만 정리"],
-      ],
-    )}${select("classPriority", "내 필기의 중요도", [
-      [1, "참고 내용"],
-      [2, "중요 내용"],
-      [3, "시험 핵심 내용"],
-    ])}</div>${select("classEmphasis", "필기의 강조 구절 우선 반영", [
-      [true, "사용"],
-      [false, "사용 안 함"],
-    ])}`,
-  )}<p class="dna-setting-hint">원하는 항목만 바꿔도 바로 저장돼요. 기본 DNA와 학습 DNA는 그대로 유지됩니다.</p>`;
+      ]) +
+        `<div id="${scope}-formula" ${d.hasMath ? "" : "hidden"}>${select("formula", "수식 설명 수준", ["결과만 표시", "의미와 사용법 설명", "유도 과정과 계산 예시", "수식 거의 없음"])}</div>` +
+        select("terminology", "용어 설명 수준", [
+          "핵심 용어만",
+          "처음 등장할 때 설명",
+          "모든 전문용어를 자세히 설명",
+        ]),
+      group,
+    ) +
+    advancedSettings(
+      "내용 보충",
+      exampleControls(d, scope) +
+        select("research", "자료 밖의 설명 보충", [
+          ["lecture", "첨부 자료 안에서만"],
+          ["balanced", "이해에 필요한 부분만"],
+          ["deep", "관련 개념까지 넓게"],
+          ["academic", "논문·전문 자료까지"],
+        ]) +
+        select("lectureWeight", "강의자료 반영도", weight) +
+        select("textbookWeight", "교재 반영도", weight) +
+        select("classWeight", "내 필기 반영도", weight) +
+        select("professorWeight", "교수님 설명 반영도", weight) +
+        select("visuals", "시각자료", [
+          ["AI가 자동 선택", "내용에 맞게 선택"],
+          ["마인드맵·개념도", "개념의 관계 보기"],
+          ["흐름도·구조도", "과정과 순서 보기"],
+          ["표·비교표", "차이점 비교하기"],
+          ["생성하지 않음", "글로만 정리"],
+        ]),
+      group,
+    )
+  );
 }
 function learningFields(d, scope = "learning") {
-  return `${multipleChoiceRow(
-    scope,
-    "problemTypes",
-    "문제 유형",
-    [
-      ["객관식", "객관식"],
-      ["단답형", "단답형"],
-      ["주관식", "서술형"],
-      ["OX", "OX"],
-    ],
-    d.problemTypes,
-    "data-learning-type",
-    "원하는 유형을 함께 고를 수 있어요.",
-  )}${numberSettingRow(scope, "questionCount", "문제 개수", d.questionCount, 100, "0개는 문제 없이 · 최대 100개")}${scopeSelect(scope, "questionDifficulty", "문제 난이도", ["기초", "강의 수준", "시험 수준", "심화"], d.questionDifficulty)}<div class="dna-setting-row"><label class="dna-field"><span>학습·시험 범위</span><input data-setting-scope="${scope}" data-setting-key="examRange" maxlength="200" value="${esc(d.examRange)}" placeholder="예: 중간고사 2–5장, PDF 20–85페이지"><small>비워두면 등록된 자료 전체를 사용해요.</small></label></div>${scopeSelect(
-    scope,
-    "chapterMode",
-    "출제 범위 구성",
-    [
-      ["챕터별", "단원마다 핵심을 확인"],
-      ["챕터 융합", "여러 단원의 개념을 연결해서 응용"],
-    ],
-    d.chapterMode,
-  )}<p class="dna-setting-hint">과목의 학습 모드를 바꿔도 문제와 시험 설정은 유지돼요.</p>`;
+  const range = `<div class="dna-setting-row"><label class="dna-field"><span>학습·시험 범위</span><input data-setting-scope="${scope}" data-setting-key="examRange" maxlength="200" value="${esc(d.examRange)}" placeholder="예: 중간고사 2–5장, PDF 20–85페이지"><small>비워두면 등록된 자료 전체를 사용해요.</small></label></div>`;
+  return advancedSettings(
+    "기본",
+    range +
+      scopeSelect(
+        scope,
+        "chapterMode",
+        "출제 범위 구성",
+        [
+          ["챕터별", "단원마다 핵심을 확인"],
+          ["챕터 융합", "여러 단원의 개념을 연결해서 응용"],
+        ],
+        d.chapterMode,
+      ) +
+      multipleChoiceRow(
+        scope,
+        "problemTypes",
+        "문제 유형",
+        [
+          ["객관식", "객관식"],
+          ["단답형", "단답형"],
+          ["주관식", "서술형"],
+          ["OX", "OX"],
+        ],
+        d.problemTypes,
+        "data-learning-type",
+        "원하는 유형을 함께 고를 수 있어요.",
+      ) +
+      numberSettingRow(
+        scope,
+        "questionCount",
+        "문제 개수",
+        d.questionCount,
+        100,
+        "0개는 문제 없이 · 최대 100개",
+      ) +
+      scopeSelect(
+        scope,
+        "questionDifficulty",
+        "문제 난이도",
+        ["기초", "강의 수준", "시험 수준", "심화"],
+        d.questionDifficulty,
+      ),
+    "dna-" + scope,
+    true,
+  );
 }
 function subjectPicker() {
   const subjects = [
@@ -744,7 +828,7 @@ function scopedSettingsPage() {
     subject: "필요한 항목만 조절하거나, 추천 구성으로 한 번에 맞춰보세요.",
     learning: "이 과목의 문제 유형, 난이도와 이번 시험 범위를 정해요.",
   };
-  return `<section class="page dna-settings"><header class="page-header"><div><span class="dna-eyebrow">NOTE DNA</span><h1>나에게 맞는 정리</h1><p>자주 쓰는 방식은 저장하고, 필요한 만큼만 조절하세요.</p></div><span class="dna-autosave" id="dna-save-state" role="status">${icon("check")} 자동 저장</span></header><nav class="dna-scope-tabs" aria-label="개인화 설정">${scopes.map(([key, title, sub]) => btn(`<strong>${title}</strong><small>${sub}</small>`, "settings-scope", key === scope ? "active" : "", `data-scope="${key}" aria-current="${key === scope ? "page" : "false"}"`)).join("")}</nav><div class="dna-settings-layout"><div class="dna-settings-main"><div class="dna-scope-heading"><div><h2>${scopes.find((s) => s[0] === scope)[1]}</h2><p>${descriptions[scope]}</p></div>${scope === "personal" ? "" : subjectPicker()}</div>${scope === "personal" ? personalFields(personalSettings()) : scope === "subject" ? subjectFields(subjectSettings(ui.dnaSubject)) : learningFields(learningSettings(ui.dnaSubject))}${scope === "personal" && !data.basicDNAReady ? `<div class="dna-onboarding-finish">${btn("이 설정으로 시작하기" + icon("arrow"), "finish-dna", "btn primary")}</div>` : ""}<p class="dna-scope-foot">${icon("lock")}${scope === "personal" ? "모든 과목에 같은 표현 방식을 사용합니다." : esc(ui.dnaSubject) + " 과목에만 저장됩니다."}</p>${scope === "subject" ? advancedSettings("편집 습관에서 발견했어요", `<div class="dna-habit-wrap">${habitPanel(ui.dnaSubject, d)}</div>`) : ""}</div><aside class="dna-settings-aside"><div class="dna-preview-card"><div class="preview-label">${icon("file")}${scope === "learning" ? "학습 구성 미리보기" : "노트 스타일 미리보기"}</div><div id="dna-preview">${scopedPreview(d)}</div><p class="dna-preview-help">설정에 따른 예시입니다. 기존 노트 본문은 유지되며, 실제 AI 정리·문제 생성은 연결 후 제공됩니다.</p></div></aside></div></section>`;
+  return `<section class="page dna-settings"><header class="page-header"><div><span class="dna-eyebrow">NOTE DNA</span><h1>나에게 맞는 정리</h1><p>자주 쓰는 방식은 저장하고, 필요한 만큼만 조절하세요.</p></div><span class="dna-autosave" id="dna-save-state" role="status">${icon("check")} 자동 저장</span></header><nav class="dna-scope-tabs" aria-label="개인화 설정">${scopes.map(([key, title, sub]) => btn(`<strong>${title}</strong><small>${sub}</small>`, "settings-scope", key === scope ? "active" : "", `data-scope="${key}" aria-current="${key === scope ? "page" : "false"}"`)).join("")}</nav><div class="dna-settings-layout"><div class="dna-settings-main"><div class="dna-scope-heading"><div><h2>${scopes.find((s) => s[0] === scope)[1]}</h2><p>${descriptions[scope]}</p></div>${scope === "personal" ? "" : subjectPicker()}</div>${scope === "personal" ? personalFields(personalSettings()) : scope === "subject" ? subjectFields(subjectSettings(ui.dnaSubject)) : learningFields(learningSettings(ui.dnaSubject))}${scope === "personal" && !data.basicDNAReady ? `<div class="dna-onboarding-finish">${btn("이 설정으로 시작하기" + icon("arrow"), "finish-dna", "btn primary")}</div>` : ""}<p class="dna-scope-foot">${icon("lock")}${scope === "personal" ? "모든 과목에 같은 표현 방식을 사용합니다." : esc(ui.dnaSubject) + " 과목에만 저장됩니다."}</p>${scope === "subject" ? advancedSettings("편집 습관에서 발견했어요", `<div class="dna-habit-wrap">${habitPanel(ui.dnaSubject, d)}</div>`, "dna-subject") : ""}</div><aside class="dna-settings-aside"><div class="dna-preview-card"><div class="preview-label">${icon("file")}${scope === "learning" ? "학습 구성 미리보기" : "노트 스타일 미리보기"}</div><div id="dna-preview">${scopedPreview(d)}</div><p class="dna-preview-help">설정에 따른 예시입니다. 기존 노트 본문은 유지되며, 실제 AI 정리·문제 생성은 연결 후 제공됩니다.</p></div></aside></div></section>`;
 }
 function styledTone(d, sample) {
   const lines = (sample.tones[d.tone] || sample.tones["쉬운 설명체"]).split(
@@ -785,14 +869,9 @@ function scopedPreview(d) {
     s = subjectSettings(ui.dnaSubject);
   if (scope === "learning")
     return `<div class="dna-mini-note"><span class="dna-preview-caption">${esc(subject)} · 복습 계획</span><h3>${l.questionCount ? l.questionCount + "문제로 확인하기" : "이번에는 노트만 읽기"}</h3><div class="dna-learning-tags">${l.problemTypes.map((t) => `<span>${t === "주관식" ? "서술형" : esc(t)}</span>`).join("")}</div><dl class="dna-plan-list"><div><dt>난이도</dt><dd>${esc(settingLabel("questionDifficulty", l.questionDifficulty))}</dd></div><div><dt>범위</dt><dd>${esc(l.examRange || "등록된 자료 전체")}</dd></div><div><dt>출제 구성</dt><dd>${l.chapterMode === "챕터별" ? "단원별로 차근차근" : "여러 단원을 연결해서"}</dd></div></dl>${l.questionCount ? `<div class="dna-question-sample"><small>문항 형식 예시 · 실제 생성 아님</small><p>${esc(l.chapterMode === "챕터 융합" ? sample.combined : sample.questions[l.problemTypes[0]] || sample.questions["주관식"])}</p></div>` : ""}</div>`;
-  const prefix = d.numbering === "글머리표 중심" ? "• " : "1. ",
-    sub =
-      d.numbering === "1. → (1) → ①"
-        ? "(1)"
-        : d.numbering === "글머리표 중심"
-          ? "◦"
-          : "1)";
-  return `${scope === "personal" ? previewSubjectPicker() : ""}<div class="dna-mini-note"><span class="dna-preview-caption">${esc(subject)} · ${esc(sample.keyword)} 예시</span><h3>${prefix}${esc(sample.title)}</h3>${d.headingStyle !== "간단하게 2단계" ? `<h4>${sub} ${esc(sample.sub)}</h4>` : ""}${d.headingStyle === "자세하게 4단계" ? `<small>${d.numbering === "1. → (1) → ①" ? "①" : "a."} ${esc(sample.section)}</small>` : ""}<div class="dna-tone-preview">${styledTone(d, sample)}</div>${d.layoutPreference !== "표 중심" ? `<ul>${sample.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}${d.layoutPreference !== "목록 중심" ? `<table><tbody>${sample.table.map((row) => `<tr>${row.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table>` : ""}${
+  const prefix = numberingPrefix(d, 1),
+    sub = numberingPrefix(d, 2);
+  return `${scope === "personal" ? previewSubjectPicker() : ""}<div class="dna-mini-note"><span class="dna-preview-caption">${esc(subject)} · ${esc(sample.keyword)} 예시</span><h3>${prefix}${esc(sample.title)}</h3><h4>${sub}${esc(sample.sub)}</h4>${d.headingStyle !== "간단하게 2단계" ? `<small>${numberingPrefix(d, 3)}${esc(sample.section)}</small>` : ""}${d.headingStyle === "자세하게 4단계" ? `<div class="dna-fourth-level">${numberingPrefix(d, 4)}핵심 설명</div>` : ""}<div class="dna-tone-preview">${styledTone(d, sample)}</div>${d.layoutPreference !== "표 중심" ? `<ul>${sample.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}${d.layoutPreference !== "목록 중심" ? `<table><tbody>${sample.table.map((row) => `<tr>${row.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table>` : ""}${
     scope === "subject"
       ? `${examplePreview(
           s,
@@ -877,9 +956,13 @@ function persistSettingControl(el) {
     );
     el.value = String(value);
   }
-  if (scope === "personal")
+  if (scope === "personal") {
     data.personalDNA = { ...personalSettings(), [key]: value };
-  else if (scope === "subject" || scope === "new-subject") {
+    if (key.startsWith("numberingLevel"))
+      data.personalDNA.numbering = [1, 2, 3, 4]
+        .map((i) => data.personalDNA["numberingLevel" + i])
+        .join(" → ");
+  } else if (scope === "subject" || scope === "new-subject") {
     let d = {
       ...(scope === "subject"
         ? subjectSettings(ui.dnaSubject)
@@ -948,8 +1031,10 @@ function syncSubjectControls(scope, d) {
   }
   for (const el of $$(`[data-example-scope="${scope}"]`)) {
     el.checked = d.exampleTypes.includes(el.value);
-    el.disabled = d.exampleCount === 0;
+    el.disabled = false;
   }
+  const countRow = $(`[data-example-count-row="${scope}"]`);
+  if (countRow) countRow.hidden = !d.exampleTypes.length;
   const summary = $(`[data-example-summary="${scope}"]`);
   if (summary)
     summary.textContent = exampleSummary(d) + " 0~10개 중 선택할 수 있어요.";
@@ -1123,7 +1208,7 @@ document.addEventListener("change", (e) => {
   }
 });
 function exampleSummary(d) {
-  return d.exampleCount === 0
+  return d.exampleCount === 0 || !d.exampleTypes.length
     ? "예시 없이 정리해요."
     : "개념 하나당 선택한 종류를 섞어 총 " + d.exampleCount + "개를 넣어요.";
 }
@@ -1136,9 +1221,9 @@ function exampleControls(d, scope) {
       exampleKinds.map((t) => [t, t]),
       d.exampleTypes,
       "data-example-scope",
-      "비유로 쉽게 이해하고, 풀이와 응용으로 연결해요.",
-      d.exampleCount === 0,
+      "선택하지 않으면 예시 없이 정리해요.",
     ) +
+    `<div data-example-count-row="${scope}" ${d.exampleTypes.length ? "" : "hidden"}>` +
     numberSettingRow(
       scope,
       "exampleCount",
@@ -1147,7 +1232,8 @@ function exampleControls(d, scope) {
       10,
       exampleSummary(d) + " 0~10개 중 선택할 수 있어요.",
       'data-example-summary="' + scope + '"',
-    )
+    ) +
+    "</div>"
   );
 }
 function exampleTypeText(subject, type) {
@@ -1190,7 +1276,7 @@ function exampleTypeText(subject, type) {
   );
 }
 function examplePreview(d, subject) {
-  if (!d.exampleCount)
+  if (!d.exampleCount || !d.exampleTypes.length)
     return '<p class="dna-example-off">예시 없이 간결하게 정리</p>';
   const types = d.exampleTypes.slice(0, Math.min(d.exampleCount, 2));
   return `<div class="dna-example-preview"><div class="dna-example-preview-head"><strong>개념당 ${d.exampleCount}개</strong><small>${d.exampleTypes.map(esc).join(" · ")}</small></div>${types.map((type) => `<div class="dna-context-example"><small>${esc(type)}</small><p>${esc(exampleTypeText(subject, type))}</p></div>`).join("")}<small class="dna-example-preview-foot">선택한 방식의 표현 예시 · 최대 2종 표시</small></div>`;
@@ -1206,13 +1292,7 @@ document.addEventListener("change", (e) => {
   const types = el.checked
     ? [...new Set([...d.exampleTypes, el.value])]
     : d.exampleTypes.filter((t) => t !== el.value);
-  if (!types.length) {
-    el.checked = true;
-    toast(
-      "예시 종류를 하나 이상 선택해 주세요. 예시가 필요 없으면 0개로 설정하세요.",
-    );
-    return;
-  }
+  if (types.length && d.exampleCount === 0) d.exampleCount = 1;
   d.exampleTypes = types;
   syncSubjectControls(scope, d);
   if (scope === "new-subject") {
@@ -1230,3 +1310,19 @@ document.addEventListener("input", (e) => {
   if (e.target.dataset.settingKey === "exampleCount")
     persistSettingControl(e.target);
 });
+
+function syncAccordion(panel) {
+  if (!panel.matches("details[data-accordion-group]")) return;
+  if (panel.open) {
+    for (const other of document.querySelectorAll(
+      "details[data-accordion-group]",
+    )) {
+      if (
+        other !== panel &&
+        other.dataset.accordionGroup === panel.dataset.accordionGroup
+      )
+        other.open = false;
+    }
+  }
+}
+document.addEventListener("toggle", (e) => syncAccordion(e.target), true);

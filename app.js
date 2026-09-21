@@ -689,7 +689,7 @@ function uploadModal() {
   ui.newLearningDraft = structuredClone(learningDefaults);
   showModal(
     "새 노트 시작하기",
-    `<label class="drop-zone" id="drop-zone" tabindex="0">${icon("upload")}<strong>강의자료를 놓거나 눌러서 선택하세요</strong><small>PDF, PPT, Word, Markdown, 텍스트, 이미지 · 최대 25MB</small><input type="file" id="material-file" accept=".pdf,.ppt,.pptx,.doc,.docx,.md,.txt,.png,.jpg,.jpeg,.webp" hidden></label><div id="picked-file"></div><div class="form-field"><label for="upload-title">노트 제목</label><input id="upload-title" placeholder="어떤 내용을 정리할까요?" maxlength="150"></div><div class="form-field"><label for="upload-subject">과목</label><select id="upload-subject">${[...new Set(["운영체제", "알고리즘", "선형대수", ...data.notes.map((n) => n.subject)])].map((s) => `<option ${s === note()?.subject ? "selected" : ""}>${esc(s)}</option>`).join("")}<option value="__new">새 과목 만들기</option></select><input id="new-subject" placeholder="새 과목 이름" maxlength="40" hidden></div><div id="new-subject-dna" hidden>${advancedSettings("새 과목의 DNA 설정", subjectFields(ui.newSubjectDraft, "new-subject"))}${advancedSettings("새 과목의 학습 DNA", learningFields(ui.newLearningDraft, "new-learning"))}</div><div class="new-note-settings"><h3>적용할 DNA</h3><div id="new-note-options">${noteFields(ui.newNoteSettings, null, true)}</div></div><p class="upload-note">파일은 이 기기에 보관됩니다. 텍스트는 바로 가져오며, PDF·PPT 분석과 웹 검색은 AI 연결 후 사용할 수 있어요.</p><p id="upload-error" class="form-error" role="alert"></p>`,
+    `<label class="drop-zone" id="drop-zone" tabindex="0">${icon("upload")}<strong>강의자료를 놓거나 눌러서 선택하세요</strong><small>PDF, PPT, Word, Markdown, 텍스트, 이미지 · 최대 25MB</small><input type="file" id="material-file" accept=".pdf,.ppt,.pptx,.doc,.docx,.md,.txt,.png,.jpg,.jpeg,.webp" hidden></label><div id="picked-file"></div><div class="form-field"><label for="upload-title">노트 제목</label><input id="upload-title" placeholder="어떤 내용을 정리할까요?" maxlength="150"></div><div class="form-field"><label for="upload-subject">과목</label><select id="upload-subject">${[...new Set(["운영체제", "알고리즘", "선형대수", ...data.notes.map((n) => n.subject)])].map((s) => `<option ${s === note()?.subject ? "selected" : ""}>${esc(s)}</option>`).join("")}<option value="__new">새 과목 만들기</option></select><input id="new-subject" placeholder="새 과목 이름" maxlength="40" hidden></div><div id="new-subject-dna" hidden>${advancedSettings("새 과목의 DNA 설정", subjectFields(ui.newSubjectDraft, "new-subject"), "new-course-panels")}${advancedSettings("새 과목의 학습 DNA", learningFields(ui.newLearningDraft, "new-learning"), "new-course-panels")}</div><div class="new-note-settings"><h3>적용할 DNA</h3><div id="new-note-options">${noteFields(ui.newNoteSettings, null, true)}</div></div><p class="upload-note">파일은 이 기기에 보관됩니다. 텍스트는 바로 가져오며, PDF·PPT 분석과 웹 검색은 AI 연결 후 사용할 수 있어요.</p><p id="upload-error" class="form-error" role="alert"></p>`,
     btn("예시로 체험하기", "sample-note", "btn ghost") +
       btn("노트 만들기", "create-note", "btn primary"),
     "자료를 가져오거나 빈 노트에서 직접 기록하세요.",
@@ -1599,7 +1599,7 @@ function handleAction(action, el = {}) {
         JSON.stringify(
           {
             name: "나의 Note DNA",
-            version: 5,
+            version: 6,
             personal: personalSettings(),
             subjects: data.subjectDNA,
             learning: data.learningDNA,
