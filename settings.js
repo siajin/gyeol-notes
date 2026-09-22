@@ -14,6 +14,8 @@ const personalDefaults = {
   learn: true,
 };
 const subjectDefaults = {
+  headingStyle: "일반적인 3단계",
+  explanation: "강의 수준",
   organization: "이해하기 좋은 흐름으로",
   mode: "개념 이해",
   examplePreference: "다양한 예시 3개 이상",
@@ -245,6 +247,7 @@ function previewSample(subject) {
 }
 const modePresets = {
   "개념 이해": {
+    explanation: "기초부터",
     length: "적당한 분량",
     examplePreference: "다양한 예시 3개 이상",
     exampleCount: 3,
@@ -257,9 +260,10 @@ const modePresets = {
     classWeight: 2,
     description: "수업 내용을 확실히 이해하기",
     detail:
-      "예시와 수식·용어 설명을 늘리고, 첨부 자료 밖의 설명는 사용하지 않아요.",
+      "예시와 수식·용어 설명을 늘리고, 첨부 자료 밖의 설명은 사용하지 않아요.",
   },
   "심화 학습": {
+    explanation: "전공 심화",
     length: "최대한 자세히",
     examplePreference: "핵심 예시 1개",
     exampleCount: 1,
@@ -275,6 +279,7 @@ const modePresets = {
       "예시와 수식·용어의 기본 설명은 줄이고, 외부 학술자료와 응용 내용을 보강해요.",
   },
   "시험 대비": {
+    explanation: "강의 수준",
     length: "핵심만 간단히",
     examplePreference: "개념별 예시 2개",
     exampleCount: 2,
@@ -287,7 +292,7 @@ const modePresets = {
     classWeight: 3,
     description: "교수 강조·필기 중심",
     detail:
-      "시험에 필요한 설명과 개인 필기를 우선해요. 문제 유형과 시험 범위는 학습 DNA에서 정해요.",
+      "시험에 필요한 설명과 개인 필기를 우선해요. 문제 유형과 시험 범위는 문제를 만들 때 정해요.",
   },
 };
 function pickSettings(source, defaults) {
@@ -1000,6 +1005,8 @@ function persistSettingControl(el) {
         ? learningSettings(ui.dnaSubject)
         : ui.newLearningDraft,
     );
+  if (typeof workspaceSettingsChanged === "function")
+    workspaceSettingsChanged(scope);
   if (!scope.startsWith("new-")) {
     const ok = save(),
       status = $("#dna-save-state");
@@ -1294,6 +1301,8 @@ document.addEventListener("change", (e) => {
     : d.exampleTypes.filter((t) => t !== el.value);
   if (types.length && d.exampleCount === 0) d.exampleCount = 1;
   d.exampleTypes = types;
+  if (typeof workspaceSettingsChanged === "function")
+    workspaceSettingsChanged(scope);
   syncSubjectControls(scope, d);
   if (scope === "new-subject") {
     ui.newSubjectDraft = d;
