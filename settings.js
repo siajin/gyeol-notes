@@ -871,13 +871,13 @@ function previewSubjectPicker() {
   ];
   return `<label class="dna-preview-switch"><span>예시 과목</span><select id="dna-preview-subject" aria-label="미리보기 과목">${subjects.map((s) => `<option value="${esc(s)}" ${s === current ? "selected" : ""}>${esc(s)}</option>`).join("")}</select></label>`;
 }
-function scopedPreview(d) {
-  const scope = ui.settingsScope || "personal",
+function scopedPreview(d, draftSubject = null) {
+  const scope = draftSubject ? "subject" : ui.settingsScope || "personal",
     subject =
       scope === "personal" ? ui.previewSubject || ui.dnaSubject : ui.dnaSubject,
     sample = previewSample(subject),
     l = learningSettings(ui.dnaSubject),
-    s = subjectSettings(ui.dnaSubject);
+    s = draftSubject || subjectSettings(ui.dnaSubject);
   if (scope === "learning")
     return `<div class="dna-mini-note"><span class="dna-preview-caption">${esc(subject)} · 복습 계획</span><h3>${l.questionCount ? l.questionCount + "문제로 확인하기" : "이번에는 노트만 읽기"}</h3><div class="dna-learning-tags">${l.problemTypes.map((t) => `<span>${t === "주관식" ? "서술형" : esc(t)}</span>`).join("")}</div><dl class="dna-plan-list"><div><dt>난이도</dt><dd>${esc(settingLabel("questionDifficulty", l.questionDifficulty))}</dd></div><div><dt>범위</dt><dd>${esc(l.examRange || "등록된 자료 전체")}</dd></div><div><dt>출제 구성</dt><dd>${l.chapterMode === "챕터별" ? "단원별로 차근차근" : "여러 단원을 연결해서"}</dd></div></dl>${l.questionCount ? `<div class="dna-question-sample"><small>문항 형식 예시 · 실제 생성 아님</small><p>${esc(l.chapterMode === "챕터 융합" ? sample.combined : sample.questions[l.problemTypes[0]] || sample.questions["주관식"])}</p></div>` : ""}</div>`;
   const prefix = numberingPrefix(d, 1),

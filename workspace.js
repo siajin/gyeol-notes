@@ -2168,13 +2168,14 @@ function creationDnaChoices() {
     .join("");
 }
 function creationDnaFields() {
-  return `<div id="creation-dna-preview">${scopedPreview(deriveDNA(ui.newPersonalDraft, ui.newSubjectDraft))}</div><section class="dna-manager-settings"><h3>기본 DNA <small>새 노트에만 적용</small></h3>${workspacePersonalFields(ui.newPersonalDraft, "new-personal")}</section><section class="dna-manager-settings"><h3>노트 DNA</h3>${workspaceNoteFields(ui.newSubjectDraft, "new-subject")}${advancedSettings("프롬프트", `<label class="form-field"><span>DNA에 포함된 프롬프트</span><textarea id="creation-dna-prompt" rows="3" maxlength="2000">${esc(ui.creation.prompt || "")}</textarea></label>`, "new-subject-accordion")}</section>`;
+  return `<div id="creation-dna-preview">${scopedPreview(deriveDNA(ui.newPersonalDraft, ui.newSubjectDraft), ui.newSubjectDraft)}</div><section class="dna-manager-settings"><h3>기본 DNA <small>새 노트에만 적용</small></h3>${workspacePersonalFields(ui.newPersonalDraft, "new-personal")}</section><section class="dna-manager-settings"><h3>노트 DNA</h3>${workspaceNoteFields(ui.newSubjectDraft, "new-subject")}${advancedSettings("프롬프트", `<label class="form-field"><span>DNA에 포함된 프롬프트</span><textarea id="creation-dna-prompt" rows="3" maxlength="2000">${esc(ui.creation.prompt || "")}</textarea></label>`, "new-subject-accordion")}</section>`;
 }
 function refreshCreateDnaPreview() {
   const p = $("#creation-dna-preview");
   if (p)
     p.innerHTML = scopedPreview(
       deriveDNA(ui.newPersonalDraft, ui.newSubjectDraft),
+      ui.newSubjectDraft,
     );
 }
 function workspaceNoteRows(n) {
