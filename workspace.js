@@ -64,7 +64,15 @@ function initializeWorkspace() {
 }
 function workspaceRender() {
   closePopover();
-  if (!["editor", "practice", "dna-manager", "dna-explore"].includes(ui.view))
+  if (
+    ![
+      "editor",
+      "practice",
+      "dna-manager",
+      "dna-explore",
+      "learning-hub",
+    ].includes(ui.view)
+  )
     ui.view = "editor";
   if (note()) {
     ui.dnaSubject = note().subject;
@@ -78,9 +86,11 @@ function workspaceRender() {
       ? (note()?.subject || "") + " 과목 DNA 관리"
       : ui.view === "dna-explore"
         ? "DNA 둘러보기"
-        : note()?.title || "내 노트") + " — Note DNA";
+        : ui.view === "learning-hub"
+          ? "학습 · 문제 목록"
+          : note()?.title || "내 노트") + " — Note DNA";
   $("#app").innerHTML =
-    `<div class="app-shell desk-shell ${ui.detailsOpen ? "rail-mobile-open" : ""} ${ui.railOpen === false ? "rail-hidden" : ""}">${sidebar()}<div class="mobile-shade" data-action="mobile-close"></div><main class="workspace" id="main">${header()}<div class="desk-columns ${ui.view === "dna-manager" ? "dna-workspace" : ""}">${ui.view === "dna-manager" ? dnaCoursePanel() : ""}<div class="desk-content">${ui.view === "dna-manager" ? dnaManagerPage() : ui.view === "dna-explore" ? dnaExplorePage() : ui.view === "practice" ? practicePage() : editor()}</div>${ui.view === "editor" && note() ? workspaceRail() : ""}</div></main></div>`;
+    `<div class="app-shell desk-shell ${ui.detailsOpen ? "rail-mobile-open" : ""} ${ui.railOpen === false ? "rail-hidden" : ""}">${sidebar()}<div class="mobile-shade" data-action="mobile-close"></div><main class="workspace" id="main">${header()}<div class="desk-columns ${ui.view === "dna-manager" ? "dna-workspace" : ""}">${ui.view === "dna-manager" ? dnaCoursePanel() : ""}<div class="desk-content">${ui.view === "dna-manager" ? dnaManagerPage() : ui.view === "dna-explore" ? dnaExplorePage() : ui.view === "learning-hub" ? learningHubPage() : ui.view === "practice" ? practicePage() : editor()}</div>${ui.view === "editor" && note() ? workspaceRail() : ""}</div></main></div>`;
   applyDnaPresentation();
 }
 
@@ -100,7 +110,7 @@ function workspaceNavigate(view) {
 }
 function workspaceSidebar() {
   const query = (ui.noteFilter || "").toLowerCase();
-  return `<aside class="sidebar desk-sidebar" aria-label="노트 목록"><div class="desk-brand">${icon("dna")}<strong>Note DNA</strong></div>${btn(icon("dna") + "<span>DNA</span>", "ws-dna-manager", "desk-note-link desk-dna-link " + (ui.view === "dna-manager" ? "current" : ""))}<div class="desk-notes-title"><span>노트</span>${btn(icon("plus"), "upload", "icon-button", 'aria-label="새 노트"')}</div><label class="desk-search">${icon("search")}<input id="desk-note-search" type="search" placeholder="노트 찾기" aria-label="노트 찾기" value="${esc(ui.noteFilter || "")}"></label><nav id="desk-note-list" aria-label="내 노트">${workspaceNoteLinks(query)}</nav>${btn(icon("globe") + "<span>DNA 둘러보기</span>", "dna-explore", "desk-note-link desk-explore-link " + (ui.view === "dna-explore" ? "current" : ""))}<div class="desk-sidebar-foot">${icon("lock")} 이 기기에 저장됨</div></aside>`;
+  return `<aside class="sidebar desk-sidebar" aria-label="노트 목록"><div class="desk-brand">${icon("dna")}<strong>Note DNA</strong></div>${btn(icon("dna") + "<span>DNA</span>", "ws-dna-manager", "desk-note-link desk-dna-link " + (ui.view === "dna-manager" ? "current" : ""))}<div class="desk-notes-title"><span>노트</span>${btn(icon("plus"), "upload", "icon-button", 'aria-label="새 노트"')}</div><label class="desk-search">${icon("search")}<input id="desk-note-search" type="search" placeholder="노트 찾기" aria-label="노트 찾기" value="${esc(ui.noteFilter || "")}"></label><nav id="desk-note-list" aria-label="내 노트">${workspaceNoteLinks(query)}</nav>${btn(icon("light") + "<span>학습</span>", "learning-hub", "desk-note-link desk-learning-link " + (["learning-hub", "practice"].includes(ui.view) ? "current" : ""))}${btn(icon("globe") + "<span>DNA 둘러보기</span>", "dna-explore", "desk-note-link desk-explore-link " + (ui.view === "dna-explore" ? "current" : ""))}<div class="desk-sidebar-foot">${icon("lock")} 이 기기에 저장됨</div></aside>`;
 }
 function workspaceNoteLinks(query = "") {
   return (
@@ -115,6 +125,8 @@ function workspaceNoteLinks(query = "") {
 }
 
 function workspaceHeader() {
+  if (ui.view === "learning-hub")
+    return `<header class="topbar desk-topbar">${btn(icon("menu"), "mobile", "icon-button mobile-toggle", 'aria-label="노트 목록 열기"')}<div class="desk-tab">${icon("light")}<span>학습 · 문제 목록</span></div></header>`;
   if (ui.view === "dna-explore")
     return `<header class="topbar desk-topbar">${btn(icon("menu"), "mobile", "icon-button mobile-toggle", 'aria-label="노트 목록 열기"')}<div class="desk-tab">${icon("globe")}<span>DNA 둘러보기</span></div></header>`;
   if (ui.view === "dna-manager")
@@ -493,21 +505,24 @@ function libraryModal(tab = "templates") {
   );
 }
 function communitySamples() {
-  return Object.keys(modePresets).map((name, i) => ({
-    id: "community-" + i,
-    name,
-    description: modePresets[name].detail,
-    author: "Note DNA 예시",
-    subject: "전공 공통",
-    purpose: name,
-    personal: personalDefaults,
-    settings: applySubjectMode(subjectDefaults, name),
-    example: "개념 → 설명 → 연결되는 사례",
-    date: "2026-09-01",
-    likes: 0,
-    imports: 0,
-    kind: "template",
-  }));
+  return [
+    ...Object.keys(modePresets).map((name, i) => ({
+      id: "community-" + i,
+      name,
+      description: modePresets[name].detail,
+      author: "Note DNA 예시",
+      subject: "전공 공통",
+      purpose: name,
+      personal: personalDefaults,
+      settings: applySubjectMode(subjectDefaults, name),
+      example: "개념 → 설명 → 연결되는 사례",
+      date: "2026-09-01",
+      likes: 0,
+      imports: 0,
+      kind: "template",
+    })),
+    ...extraCommunityDNA(),
+  ];
 }
 function libraryResults(tab, query = "", sort = "recent") {
   let items =
@@ -565,7 +580,7 @@ function libraryPreview(id, kind) {
   ui.libraryItem = { id, kind };
   showModal(
     esc(t.name),
-    `<p>${esc(t.description || t.text || "")}</p>${t.settings ? `<dl class="desk-definition"><dt>노트 분량</dt><dd>${esc(t.settings.length)}</dd><dt>용어 설명</dt><dd>${esc(t.settings.terminology)}</dd><dt>예시</dt><dd>${esc((t.settings.exampleTypes || []).join(" · ") || "없음")}</dd><dt>문체</dt><dd>${esc(t.personal?.tone || "쉬운 설명체")}</dd></dl><div class="desk-sample">${esc(t.example || "개념을 이해한 뒤 핵심과 예시를 연결하는 노트 구성입니다.")}</div>` : `<div class="desk-sample">${esc(t.text || "")}</div>`}`,
+    `<p>${esc(t.description || t.text || "")}</p>${t.settings ? `<dl class="desk-definition"><dt>노트 분량</dt><dd>${esc(t.settings.length)}</dd><dt>용어 설명</dt><dd>${esc(t.settings.terminology)}</dd><dt>예시</dt><dd>${esc((t.settings.exampleTypes || []).join(" · ") || "없음")}</dd><dt>문체</dt><dd>${esc(t.personal?.tone || "쉬운 설명체")}</dd></dl><div class="desk-sample">${esc(t.example || "개념을 이해한 뒤 핵심과 예시를 연결하는 노트 구성입니다.")}</div>${communityNotePreview(t)}` : `<div class="desk-sample">${esc(t.text || "")}</div>`}`,
     btn(
       "보관함",
       kind === "prompts"
@@ -811,6 +826,7 @@ function workspaceConfirm(kind, id, label) {
   );
 }
 function handleWorkspaceAction(action, el = {}) {
+  if (handleLearningHubAction(action, el)) return true;
   if (handleDnaExploreAction(action, el)) return true;
   if (handleNoteFlowAction(action, el)) return true;
   if (handleDnaManagerAction(action, el)) return true;
@@ -868,11 +884,12 @@ function handleWorkspaceAction(action, el = {}) {
       changed();
       render();
       const content = $("#block-" + CSS.escape(memo.id) + " .block-content");
-      content?.focus();
+      beginParagraphEdit(content?.closest(".note-block"));
       content?.scrollIntoView({ block: "center" });
       return true;
     }
     case "ws-practice":
+      ui.fromLearningHub = false;
       ui.view = "practice";
       ui.activeSetId = null;
       ui.onlyWrong = false;
@@ -1389,6 +1406,7 @@ function handleWorkspaceAction(action, el = {}) {
       render();
       return true;
     case "ws-set-list":
+      if (ui.fromLearningHub) ui.view = "learning-hub";
       ui.activeSetId = null;
       ui.onlyWrong = false;
       render();
@@ -1855,6 +1873,15 @@ function handleDnaManagerAction(action, el) {
   if (action === "dna-read-more") {
     const block = el.closest(".note-block");
     block.classList.toggle("dna-show-full");
+    const source = note().blocks.find((b) => b.id === block.dataset.block);
+    const reading = block.querySelector(".dna-reading-copy");
+    if (source && reading)
+      reading.innerHTML = dnaReadingHTML(
+        block.classList.contains("dna-show-full")
+          ? { ...source, dnaVariantOriginal: false }
+          : source,
+        dna(),
+      );
     el.textContent = block.classList.contains("dna-show-full")
       ? "핵심만 보기"
       : "전체 내용 보기";
@@ -1992,6 +2019,7 @@ function dnaReadingHTML(b, d) {
       box.innerHTML =
         "<ul>" + parts.map((t) => "<li>" + esc(t) + "</li>").join("") + "</ul>";
   }
+  if (prepared) box.innerHTML = modeSpecificReading(b, d, box.innerHTML);
   if (d.layoutPreference === "목록 중심")
     for (const table of [...box.querySelectorAll("table")]) {
       const rows = [...table.querySelectorAll("tr")],
@@ -2438,4 +2466,348 @@ function handleDnaExploreAction(action, el) {
     return true;
   }
   return false;
+}
+
+function learningHubPage() {
+  const rows = data.notes
+    .flatMap((n) => (n.problemSets || []).map((set) => ({ n, set })))
+    .sort((a, b) =>
+      String(b.set.createdAt || "").localeCompare(
+        String(a.set.createdAt || ""),
+      ),
+    );
+  return `<section class="learning-hub-page"><header class="dna-manager-heading"><span class="desk-eyebrow">조금씩, 꾸준히 복습하기</span><h1>학습</h1><p>모든 과목의 문제를 모았어요. 원하는 문제를 선택해 이어서 풀어보세요.</p></header><div class="learning-course-actions"><span>문제 만들기</span>${data.notes.map((n) => btn(esc(n.subject), "learning-course", "btn secondary", `data-id="${esc(n.id)}"`)).join("")}</div><div class="learning-list-title"><h2>문제 목록</h2><span>${rows.length}개</span></div><div class="learning-all-list">${rows.map(({ n, set }) => `<button class="learning-problem-row" data-action="learning-open" data-note="${esc(n.id)}" data-id="${esc(set.id)}"><span class="learning-subject">${esc(n.subject)}</span><span class="learning-problem-name"><strong>${esc(set.name)}</strong><small>${set.questions.length}문제 · ${esc(set.settings?.examRange || "등록된 학습 범위")}</small></span><span class="learning-status ${set.submitted ? "complete" : ""}">${set.submitted ? "풀이 완료" : Object.keys(set.answers || {}).length ? "이어서 풀기" : "풀기 전"}</span>${icon("right")}</button>`).join("") || '<div class="learning-empty"><h3>아직 만든 문제가 없어요</h3><p>위에서 과목을 선택해 첫 문제를 만들어 보세요.</p></div>'}</div></section>`;
+}
+function handleLearningHubAction(action, el) {
+  if (action === "learning-hub") {
+    ui.view = "learning-hub";
+    ui.activeSetId = null;
+    ui.fromLearningHub = true;
+    render();
+    return true;
+  }
+  if (action === "learning-open" || action === "learning-course") {
+    const n = data.notes.find(
+      (n) => n.id === (el.dataset.note || el.dataset.id),
+    );
+    if (!n) return true;
+    if (
+      action === "learning-open" &&
+      !(n.problemSets || []).some((s) => s.id === el.dataset.id)
+    )
+      return true;
+    ui.noteId = n.id;
+    ui.dnaSubject = n.subject;
+    ui.view = "practice";
+    ui.fromLearningHub = true;
+    ui.onlyWrong = false;
+    ui.activeSetId = action === "learning-open" ? el.dataset.id : null;
+    render();
+    return true;
+  }
+  return false;
+}
+function extraCommunityDNA() {
+  const entries = [
+    [
+      "cs-map",
+      "흐름으로 이해하는 운영체제",
+      "운영체제",
+      "개념 이해",
+      "과정을 순서대로 따라가고, 헷갈리는 개념은 비교합니다.",
+      "페이지 폴트, 처리 흐름으로 이해하기",
+      [
+        [
+          "페이지 폴트는 언제 발생할까?",
+          "프로세스가 요청한 페이지가 물리 메모리에 없으면 페이지 폴트가 발생한다. 유효한 주소라면 운영체제가 페이지를 적재한 후 실행을 이어갈 수 있다.",
+          [
+            "TLB 미스는 주소 변환 캐시에 정보가 없는 상황이다.",
+            "페이지 폴트는 필요한 페이지가 메모리에 없는 상황이다.",
+          ],
+        ],
+        [
+          "처리 순서",
+          "접근 주소 확인 → 빈 프레임 확보 → 디스크에서 페이지 적재 → 페이지 테이블 갱신 → 중단된 명령 재실행.",
+          [
+            "빈 프레임이 없으면 교체할 페이지를 고른다.",
+            "수정된 페이지를 내보낼 때는 디스크에 기록할 수 있다.",
+          ],
+        ],
+        [
+          "책상과 책장으로 생각하기",
+          "메모리는 책상, 디스크는 책장과 비슷하다. 필요한 책을 책상에 가져온 뒤 읽던 작업을 계속한다.",
+          [
+            "확인 질문: TLB 미스가 나면 반드시 페이지 폴트가 발생할까?",
+            "답: 아니다. 페이지 테이블을 통해 이미 메모리에 있는 프레임을 찾을 수 있다.",
+          ],
+        ],
+      ],
+    ],
+    [
+      "math-step",
+      "계산을 따라가는 선형대수",
+      "선형대수",
+      "개념 이해",
+      "기호의 의미부터 계산 예제까지 한 단계씩 설명합니다.",
+      "고유값과 고유벡터",
+      [
+        [
+          "방향이 유지되는 벡터",
+          "Av = λv에서 0이 아닌 v는 고유벡터, λ는 고유값이다. 행렬을 곱해도 벡터는 같은 직선 위에 남는다.",
+          [
+            "λ가 양수면 방향을 유지하고, 음수면 반대 방향이 된다.",
+            "고유벡터는 반드시 0이 아닌 벡터다.",
+          ],
+        ],
+        [
+          "계산 예제",
+          "A = diag(2, 3)일 때 det(A − λI) = (2 − λ)(3 − λ) = 0이다. 따라서 고유값은 2와 3이다.",
+          [
+            "λ = 2: v = (1, 0)을 선택하면 Av = (2, 0) = 2v.",
+            "λ = 3: v = (0, 1)을 선택하면 Av = (0, 3) = 3v.",
+          ],
+        ],
+        [
+          "계산 뒤 확인하기",
+          "구한 벡터를 원래 식 Av = λv에 대입해 양쪽이 같은지 확인한다.",
+          [
+            "행렬식 계산만으로 고유벡터까지 구한 것은 아니다.",
+            "같은 고유벡터의 0이 아닌 상수배도 고유벡터다.",
+          ],
+        ],
+      ],
+    ],
+    [
+      "algo-deep",
+      "원리부터 파고드는 알고리즘",
+      "알고리즘",
+      "심화 학습",
+      "정당성과 복잡도를 함께 짚고 다른 접근과 연결합니다.",
+      "동적 계획법의 상태 설계",
+      [
+        [
+          "무엇을 저장할 것인가",
+          "상태는 부분 문제의 답을 식별하는 최소 정보다. 상태의 의미를 먼저 문장으로 정의하면 점화식과 초기값을 검증하기 쉽다.",
+          [
+            "dp[i]: 길이가 i인 문제의 최적값처럼 범위를 명확히 쓴다.",
+            "이전 선택이 미래 결과에 영향을 주면 상태에 그 정보를 포함한다.",
+          ],
+        ],
+        [
+          "점화식의 정당성",
+          "마지막 선택으로 경우를 나누고, 각 경우가 더 작은 부분 문제의 최적해로 구성되는지 확인한다.",
+          [
+            "모든 유효한 경우를 포함해야 한다.",
+            "같은 상태의 답을 재사용할 수 있어야 한다.",
+          ],
+        ],
+        [
+          "시간과 공간 복잡도",
+          "상태 개수에 상태당 전이 비용을 곱해 시간을 추정한다. 바로 이전 상태만 필요하면 저장 공간을 줄일 수 있다.",
+          [
+            "메모이제이션: 필요한 상태부터 재귀적으로 계산.",
+            "타뷸레이션: 의존 관계에 맞는 순서로 반복 계산.",
+          ],
+        ],
+      ],
+    ],
+    [
+      "bio-compare",
+      "비교로 외우는 생명과학",
+      "생명과학",
+      "시험 대비",
+      "공통점과 차이를 짧게 나누고 확인 질문을 붙입니다.",
+      "체세포 분열과 감수 분열",
+      [
+        [
+          "목적부터 구분",
+          "체세포 분열은 성장과 조직 유지에, 감수 분열은 생식세포 형성에 관여한다.",
+          [
+            "체세포 분열: 일반적으로 한 번 분열해 두 딸세포를 만든다.",
+            "감수 분열: 두 번 분열하며 염색체 수를 절반으로 줄인다.",
+          ],
+        ],
+        [
+          "무엇이 분리될까?",
+          "감수 1분열에서는 상동 염색체가, 감수 2분열에서는 자매 염색분체가 분리된다.",
+          [
+            "시험 포인트: 상동 염색체와 자매 염색분체를 구별한다.",
+            "DNA 복제는 감수 1분열 전에 일어나고 두 분열 사이에는 일어나지 않는다.",
+          ],
+        ],
+        [
+          "스스로 확인",
+          "감수 분열이 유전적 다양성에 기여하는 이유를 두 가지로 설명해 보자.",
+          ["상동 염색체 사이의 교차.", "상동 염색체 쌍의 독립적인 분리."],
+        ],
+      ],
+    ],
+    [
+      "econ-case",
+      "사례로 읽는 경제학",
+      "경제학",
+      "개념 이해",
+      "정의와 생활 사례를 연결하고 조건을 함께 기록합니다.",
+      "수요 변화와 수요량 변화",
+      [
+        [
+          "같은 곡선 위의 이동",
+          "재화 자신의 가격이 바뀌어 구매하려는 양이 달라지는 것은 수요량 변화다. 다른 조건은 같다고 가정한다.",
+          ["커피 가격이 내려 구매량이 늘었다면 수요 곡선 위에서 이동한다."],
+        ],
+        [
+          "곡선 자체의 이동",
+          "소득, 취향, 관련 재화 가격처럼 가격 외 요인이 바뀌면 수요 곡선이 이동할 수 있다.",
+          [
+            "커피 선호가 높아지면 같은 가격에서도 더 많이 구매하려 한다.",
+            "소득 증가의 효과는 정상재인지 열등재인지에 따라 다르다.",
+          ],
+        ],
+        [
+          "혼동을 줄이는 질문",
+          "먼저 변한 것이 해당 재화의 가격인지, 가격 이외의 조건인지 확인한다.",
+          [
+            "수요 증가와 공급 감소는 가격에 같은 방향으로 작용할 수 있다.",
+            "수량 변화는 두 변화의 크기에 따라 달라질 수 있다.",
+          ],
+        ],
+      ],
+    ],
+    [
+      "history-exam",
+      "맥락으로 정리하는 한국사",
+      "한국사",
+      "시험 대비",
+      "배경·전개·결과를 연결해 사건의 맥락을 복습합니다.",
+      "갑오개혁의 배경과 주요 변화",
+      [
+        [
+          "배경",
+          "동학 농민 운동과 청일 전쟁 전후의 국내외 정세 속에서 개혁이 추진되었다. 국내의 개혁 요구와 외세의 개입을 함께 살펴야 한다.",
+          ["사건의 연도만 외우기보다 앞뒤 흐름을 연결한다."],
+        ],
+        [
+          "핵심 변화",
+          "신분제 폐지와 과거제 폐지 등 사회·정치 제도의 변화가 추진되었다.",
+          [
+            "신분에 따른 법적 차별을 없애는 방향의 변화.",
+            "관리 선발과 국가 운영 제도를 바꾸려는 시도.",
+          ],
+        ],
+        [
+          "복습 포인트",
+          "개혁의 의의와 한계를 나누어 설명하자. 제도 변화의 근대적 성격과 외세의 영향은 함께 검토해야 한다.",
+          [
+            "질문: 신분제 폐지는 어떤 의미가 있는가?",
+            "질문: 개혁 과정에 외세가 개입했다는 점은 어떻게 평가할 수 있는가?",
+          ],
+        ],
+      ],
+    ],
+  ];
+  return entries.map(
+    ([id, name, subject, purpose, description, title, sections], i) => ({
+      id: "sample-" + id,
+      name,
+      subject,
+      purpose,
+      description,
+      author: "Note DNA 예시",
+      kind: "template",
+      date: "2026-09-" + String(22 - i).padStart(2, "0"),
+      likes: 0,
+      downloads: 0,
+      personal: {
+        ...personalDefaults,
+        tone: purpose === "시험 대비" ? "간결한 노트체" : "쉬운 설명체",
+      },
+      settings: {
+        ...applySubjectMode(subjectDefaults, purpose),
+        hasMath: ["선형대수", "알고리즘", "경제학"].includes(subject),
+      },
+      example: title,
+      previewNote: { title, sections },
+      prompt:
+        subject +
+        "의 핵심 개념을 " +
+        purpose +
+        "에 맞춰 정리하고, 설명 뒤에 확인 질문을 넣어줘.",
+    }),
+  );
+}
+function communityNotePreview(t) {
+  const sample =
+    t.previewNote ||
+    extraCommunityDNA().find((x) => x.purpose === t.purpose)?.previewNote ||
+    extraCommunityDNA()[0].previewNote;
+  return `<section class="dna-generated-preview"><div class="preview-label">${icon("file")}노트 결과 미리보기</div><p class="desk-hint">DNA의 정리 방식을 보여주는 예시 노트입니다. 실시간 AI 생성 결과는 아니에요.</p><article><span class="desk-eyebrow">${esc(t.subject || "공통")} · ${esc(t.name)}</span><h2>${esc(sample.title)}</h2>${sample.sections.map(([title, text, points], i) => `<section><h3>${i + 1}. ${esc(title)}</h3><p>${esc(text)}</p><ul>${points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul></section>`).join("")}</article></section>`;
+}
+
+function beginParagraphEdit(block) {
+  if (!block || !block.closest(".desk-document")) return;
+  finishParagraphEdit(block);
+  const detail = block.querySelector("details.supplementary");
+  if (detail) detail.open = true;
+  block.classList.add("paragraph-editing");
+  const content = block.querySelector(".block-content");
+  content.setAttribute("contenteditable", "true");
+  content.setAttribute("aria-readonly", "false");
+  content.focus();
+}
+function finishParagraphEdit(keep = null) {
+  document
+    .querySelectorAll(".desk-document .paragraph-editing")
+    .forEach((block) => {
+      if (block === keep) return;
+      const content = block.querySelector(".block-content");
+      content.blur();
+      content.setAttribute("contenteditable", "false");
+      content.setAttribute("aria-readonly", "true");
+      block.classList.remove("paragraph-editing", "selected");
+      block.querySelector(".context-toolbar")?.remove();
+      if (ui.selected === block.dataset.block) ui.selected = null;
+    });
+  applyDnaPresentation();
+}
+document.addEventListener("dblclick", (e) => {
+  if (e.target.closest("button,a,input,textarea,select,.context-toolbar"))
+    return;
+  beginParagraphEdit(e.target.closest(".note-block"));
+});
+document.addEventListener(
+  "pointerdown",
+  (e) => {
+    const active = document.querySelector(".desk-document .paragraph-editing");
+    if (active && !active.contains(e.target)) finishParagraphEdit();
+  },
+  true,
+);
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && e.target.closest(".paragraph-editing")) {
+    e.preventDefault();
+    finishParagraphEdit();
+  }
+});
+
+function modeSpecificReading(b, d, fallback) {
+  const mode = d.mode || "개념 이해",
+    v = sampleModeNotes()[b.id];
+  if (v) {
+    if (mode === "시험 대비")
+      return `<p class="mode-key-point"><strong>${esc(v[2])}</strong></p><details class="mode-check"><summary>${esc(v[3])}</summary><p>${esc(v[4])}</p></details>`;
+    if (mode === "심화 학습")
+      return `<p>${esc(v[1])}</p><div class="mode-connection"><span>연결해서 생각하기</span><p>${esc(v[3])}</p><p>${esc(v[4])}</p></div>`;
+    return `<p>${esc(v[0])}</p>`;
+  }
+  if (mode === "시험 대비") {
+    const excerpt = document.createElement("div");
+    excerpt.innerHTML = sanitize(b.html);
+    const points = [...excerpt.querySelectorAll("li,p")]
+      .map((x) => x.textContent.trim())
+      .filter(Boolean)
+      .slice(0, 3);
+    return `<div class="mode-key-point">${points.length ? "<ul>" + points.map((p) => "<li>" + esc(p) + "</li>").join("") + "</ul>" : fallback}</div><details class="mode-check"><summary>${esc(b.title || "이 개념")}의 핵심을 설명할 수 있나요?</summary><div>${sanitize(b.html)}</div></details>`;
+  }
+  if (mode === "심화 학습") return sanitize(b.html);
+  return fallback;
 }

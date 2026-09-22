@@ -435,7 +435,7 @@ function blockHTML(b, index) {
   const titleMarkup = b.title
     ? `<div class="block-title"><span class="section-number">${String(index).padStart(2, "0")}</span><h2>${esc(b.title)}</h2></div>`
     : "";
-  return `<section class="note-block ${b.type === "diagram" ? "note-visual" : ""} ${b.optional ? "supplementary-block" : ""} ${ui.selected === b.id ? "selected" : ""}" data-block="${esc(b.id)}" id="block-${esc(b.id)}" tabindex="0" aria-label="${esc(b.title || src[1])} 블록">${btn(icon("grip"), "select-block", "block-handle", `draggable="true" data-block="${esc(b.id)}" aria-label="블록 이동 및 편집"`)}${b.optional ? `<details class="supplementary"><summary>${titleMarkup}<span class="expand-hint">펼쳐보기</span></summary><div class="supplementary-content">` : titleMarkup}${source}${ui.exam ? `<div class="priority">${"★".repeat(b.priority || 1)} ${b.priority === 3 ? "반드시 기억하기" : "중요 개념"}</div>` : ""}<div class="${b.type === "callout" ? "explain-callout" : b.type === "memo" ? "memo-body" : ""}">${b.type === "callout" ? icon("light") : ""}<div class="block-content" contenteditable="true" role="textbox" aria-multiline="true" aria-label="${esc(b.title || src[1])} 내용" spellcheck="false">${sanitize(b.html)}</div></div>${b.type === "formula" ? `<div class="formula">${esc(b.formula || "")}</div><div class="formula-foot"><span>p: 페이지 폴트 확률 · ma: 메모리 접근 시간</span>${btn("수식 이해하기" + icon("down"), "formula-menu", "", 'data-block="' + b.id + '"')}</div>` : ""}${b.optional ? "</div></details>" : ""}${ui.selected === b.id ? toolbar(b) : ""}</section>`;
+  return `<section class="note-block ${b.type === "diagram" ? "note-visual" : ""} ${b.optional ? "supplementary-block" : ""} ${ui.selected === b.id ? "selected" : ""}" data-block="${esc(b.id)}" id="block-${esc(b.id)}" tabindex="0" aria-label="${esc(b.title || src[1])} 블록">${btn(icon("grip"), "select-block", "block-handle", `draggable="true" data-block="${esc(b.id)}" aria-label="블록 이동 및 편집"`)}${b.optional ? `<details class="supplementary"><summary>${titleMarkup}<span class="expand-hint">펼쳐보기</span></summary><div class="supplementary-content">` : titleMarkup}${source}${ui.exam ? `<div class="priority">${"★".repeat(b.priority || 1)} ${b.priority === 3 ? "반드시 기억하기" : "중요 개념"}</div>` : ""}<div class="${b.type === "callout" ? "explain-callout" : b.type === "memo" ? "memo-body" : ""}">${b.type === "callout" ? icon("light") : ""}<div class="block-content" contenteditable="false" aria-readonly="true" role="textbox" aria-multiline="true" aria-label="${esc(b.title || src[1])} 내용" spellcheck="false">${sanitize(b.html)}</div></div>${b.type === "formula" ? `<div class="formula">${esc(b.formula || "")}</div><div class="formula-foot"><span>p: 페이지 폴트 확률 · ma: 메모리 접근 시간</span>${btn("수식 이해하기" + icon("down"), "formula-menu", "", 'data-block="' + b.id + '"')}</div>` : ""}${b.optional ? "</div></details>" : ""}${ui.selected === b.id ? toolbar(b) : ""}</section>`;
 }
 function sourcePanel() {
   const n = note();
@@ -1460,6 +1460,7 @@ document.addEventListener("click", (e) => {
   const block = e.target.closest(".note-block");
   if (e.target.closest("summary")) return;
   if (block) {
+    if (block.closest(".desk-document")) return;
     selectBlock(block.dataset.block);
     return;
   }
@@ -1622,7 +1623,7 @@ document.addEventListener("keydown", (e) => {
     selectBlock(e.target.dataset.block);
     const detail = $("details.supplementary", e.target);
     if (detail) detail.open = true;
-    $(".block-content", e.target).focus();
+    beginParagraphEdit(e.target);
   }
   if (
     e.target.id === "class-drop-zone" &&

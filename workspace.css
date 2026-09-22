@@ -1437,11 +1437,11 @@ body {
 .dna-original-content {
   display: none;
 }
-.note-block.selected .dna-original-content {
+.note-block.paragraph-editing .dna-original-content {
   display: block;
 }
-.note-block.selected .dna-reading-copy,
-.note-block.selected .dna-read-more {
+.note-block.paragraph-editing .dna-reading-copy,
+.note-block.paragraph-editing .dna-read-more {
   display: none;
 }
 .dna-numbered-list {
@@ -2115,4 +2115,201 @@ body {
     opacity: 1;
     pointer-events: auto;
   }
+}
+
+/* Keep study navigation directly below the notes, apart from discovery. */
+#desk-note-list {
+  flex: 0 1 auto;
+  max-height: 42vh;
+}
+.desk-learning-link {
+  margin-top: 22px;
+  border-top: 1px solid #e6eaf1;
+  padding-top: 18px;
+  border-radius: 0;
+}
+.desk-explore-link {
+  margin-top: auto;
+}
+.learning-hub-page {
+  max-width: 1080px;
+  margin: auto;
+  padding: 42px 48px 80px;
+}
+.learning-course-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 22px 0;
+  border-bottom: 1px solid #e8ecf2;
+}
+.learning-course-actions > span {
+  font-size: 12px;
+  color: #7a8493;
+  margin-right: 8px;
+}
+.learning-list-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 30px 0 16px;
+}
+.learning-list-title h2 {
+  font-size: 18px;
+  margin: 0;
+}
+.learning-list-title > span {
+  color: #8490a2;
+  font-size: 12px;
+}
+.learning-problem-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  text-align: left;
+  padding: 22px 16px;
+  background: white;
+  border: 0;
+  border-bottom: 1px solid #e9edf3;
+  border-radius: 6px;
+}
+.learning-problem-row:hover {
+  background: #f6f8fc;
+}
+.learning-subject {
+  font-size: 12px;
+  color: #697a96;
+  min-width: 70px;
+}
+.learning-problem-name {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  flex: 1;
+}
+.learning-problem-name strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.learning-problem-name small {
+  color: #8891a0;
+  font-size: 12px;
+}
+.learning-status {
+  font-size: 11px;
+  color: #7b86a0;
+  background: #f1f4fa;
+  padding: 5px 8px;
+  border-radius: 5px;
+}
+.learning-status.complete {
+  color: #478575;
+  background: #eef7f3;
+}
+.learning-empty {
+  padding: 55px 20px;
+  text-align: center;
+  background: #fafbfd;
+  border-radius: 10px;
+  color: #8690a0;
+}
+.learning-empty h3 {
+  font-size: 16px;
+  color: #465368;
+}
+#modal:has(.dna-generated-preview) {
+  width: 820px;
+  max-width: calc(100vw - 32px);
+}
+.dna-generated-preview {
+  margin-top: 26px;
+  border-top: 1px solid #e6eaf1;
+  padding-top: 22px;
+}
+.dna-generated-preview article {
+  margin-top: 18px;
+  padding: 28px 32px;
+  border: 1px solid #e6eaf1;
+  border-radius: 8px;
+  background: #fff;
+}
+.dna-generated-preview h2 {
+  font-size: 23px;
+  line-height: 1.5;
+  margin: 14px 0 30px;
+}
+.dna-generated-preview h3 {
+  font-size: 16px;
+  margin: 26px 0 10px;
+}
+.dna-generated-preview article p,
+.dna-generated-preview li {
+  font-size: 14px;
+  line-height: 1.9;
+  color: #536075;
+}
+.dna-generated-preview ul {
+  padding-left: 20px;
+}
+.desk-document .paragraph-editing {
+  outline: 1px solid #c4cfe3;
+  border-radius: 7px;
+  background: #fcfdff;
+}
+.desk-document .block-content[contenteditable="false"] {
+  cursor: text;
+}
+@media (max-width: 760px) {
+  .learning-hub-page {
+    padding: 26px 20px 60px;
+  }
+  .learning-problem-row {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .learning-subject {
+    width: 100%;
+  }
+  .dna-generated-preview article {
+    padding: 18px;
+  }
+}
+
+.mode-connection {
+  margin: 18px 0 4px;
+  padding: 15px 18px;
+  border-left: 2px solid #c8c0e4;
+  background: #faf9fd;
+  border-radius: 0 6px 6px 0;
+}
+.mode-connection > span {
+  font-size: 11px;
+  color: #8c7fa6;
+}
+.mode-connection p {
+  margin: 8px 0;
+}
+.mode-check {
+  margin: 14px 0;
+  padding: 12px 15px;
+  background: #f6f8fc;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.mode-check summary {
+  cursor: pointer;
+  color: #526786;
+  line-height: 1.7;
+}
+.mode-check p {
+  margin: 12px 0 0;
+}
+.desk-document
+  .note-block:not(.paragraph-editing)
+  .dna-reading-copy:has(.mode-key-point) {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
 }
