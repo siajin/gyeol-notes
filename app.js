@@ -10,6 +10,7 @@ const esc = (value) =>
       ],
   );
 const paths = {
+  moreVertical: "M12 5h.01M12 12h.01M12 19h.01",
   pin: "M8 3h8l-1 7 4 4v2H5v-2l4-4-1-7ZM12 16v6",
   book: "M4 4h6c1.5 0 2 1 2 2v15c0-2-2-3-4-3H4V4Zm16 0h-6c-1.5 0-2 1-2 2m0 15c0-2 2-3 4-3h4V4Z",
   file: "M14 3H5v18h14V8l-5-5Zm0 0v5h5M8 12h8M8 16h6",
@@ -607,11 +608,14 @@ function templatesPage() {
 function showModal(title, body, footer = "", subtitle = "", eyebrow = "") {
   closePopover();
   const m = $("#modal");
+  m.classList.remove("note-menu-dialog");
   m.innerHTML = `<div class="modal-body"><header class="modal-header"><div>${eyebrow ? `<span class="modal-eyebrow">${eyebrow}</span>` : ""}<h2 id="modal-title">${title}</h2>${subtitle ? `<p>${subtitle}</p>` : ""}</div>${btn(icon("close"), "close-modal", "icon-button", 'aria-label="닫기"')}</header>${body}${footer ? `<footer class="modal-footer">${footer}</footer>` : ""}</div>`;
   if (!m.open) m.showModal();
 }
 function closeModal() {
   $("#modal").close();
+  $("#modal").classList.remove("note-menu-dialog");
+  ui.creation = null;
   ui.pending = null;
   ui.classPlan = null;
   ui.classToken = null;

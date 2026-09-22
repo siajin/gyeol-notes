@@ -481,18 +481,24 @@ function upgradeNumberingSettings() {
   data.settingsVersion = 6;
 }
 const numberingOptions = ["1.", "1)", "(1)", "①", "a.", "가.", "•", "없음"];
-function numberingControls(d) {
-  return `<div class="dna-numbering-levels">${[1, 2, 3, 4].map((level) => scopeSelect("personal", "numberingLevel" + level, level + "단계 번호", numberingOptions, d["numberingLevel" + level])).join("")}</div><p class="dna-setting-hint">단계마다 번호·글머리표·번호 없음을 따로 선택해요.</p>`;
+function numberingControls(d, scope = "personal") {
+  return `<div class="dna-numbering-levels">${[1, 2, 3, 4].map((level) => scopeSelect(scope, "numberingLevel" + level, level + "단계 번호", numberingOptions, d["numberingLevel" + level])).join("")}</div><p class="dna-setting-hint">단계마다 번호·글머리표·번호 없음을 따로 선택해요.</p>`;
 }
 function numberingPrefix(d, level) {
   const value = d["numberingLevel" + level];
   return !value || value === "없음" ? "" : esc(value) + " ";
 }
-function personalSettings() {
-  return { ...personalDefaults, ...data.personalDNA };
+function personalSettings(subject) {
+  let n = subject ? data.notes.find((n) => n.subject === subject) : null;
+  if (!subject) {
+    try {
+      n = note();
+    } catch {}
+  }
+  return { ...personalDefaults, ...(n?.personalDNA || data.personalDNA) };
 }
-function personalForSubject() {
-  return personalSettings();
+function personalForSubject(subject) {
+  return personalSettings(subject);
 }
 function subjectSettings(subject) {
   return { ...subjectDefaults, ...data.subjectDNA?.[subject] };
@@ -944,7 +950,7 @@ function persistSettingControl(el) {
   const scope = el.dataset.settingScope,
     key = el.dataset.settingKey;
   const defaults =
-    scope === "personal"
+    scope === "personal" || scope === "new-personal"
       ? personalDefaults
       : scope === "learning" || scope === "new-learning"
         ? learningDefaults
@@ -965,12 +971,18 @@ function persistSettingControl(el) {
     );
     el.value = String(value);
   }
-  if (scope === "personal") {
-    data.personalDNA = { ...personalSettings(), [key]: value };
+  if (scope === "personal" || scope === "new-personal") {
+    const target = {
+      ...(scope === "new-personal" ? ui.newPersonalDraft : personalSettings()),
+      [key]: value,
+    };
     if (key.startsWith("numberingLevel"))
-      data.personalDNA.numbering = [1, 2, 3, 4]
-        .map((i) => data.personalDNA["numberingLevel" + i])
+      target.numbering = [1, 2, 3, 4]
+        .map((i) => target["numberingLevel" + i])
         .join(" → ");
+    if (scope === "new-personal") ui.newPersonalDraft = target;
+    else note().personalDNA = target;
+    syncVisibleChoices(scope, target);
   } else if (scope === "subject" || scope === "new-subject") {
     let d = {
       ...(scope === "subject"
@@ -1080,6 +1092,10 @@ function creationSummary() {
   return `<div class="dna-creation-summary"><span>${icon("dna")}과목의 DNA를 가져와요</span><strong>${esc(subjectPresetLabel(s))} · ${esc(s.length)}</strong><small>${l.questionCount ? `${l.problemTypes.map(esc).join(" · ")} / ${l.questionCount}개 / ${esc(l.chapterMode)}` : "문제 생성 안 함"}</small></div>`;
 }
 function refreshCreationSummary() {
+  if (ui.creation?.editingDNA) {
+    refreshCreateDnaPreview();
+    return;
+  }
   if ($("#new-note-options"))
     $("#new-note-options").innerHTML = creationSummary();
 }
@@ -1117,7 +1133,7 @@ function applyScopedTemplate(subject, t, keys) {
         ? "핵심 용어만"
         : "모든 전문용어를 자세히 설명";
   if (keys.includes("formats"))
-    data.personalDNA = {
+    note().personalDNA = {
       ...personalSettings(),
       layoutPreference:
         t.formats.includes("표") && t.formats.includes("글머리표")
@@ -1314,6 +1330,7 @@ document.addEventListener("change", (e) => {
   } else {
     data.subjectDNA ||= {};
     data.subjectDNA[ui.dnaSubject] = d;
+    workspaceSettingsChanged(scope);
     save();
     refreshScopedPreview();
   }

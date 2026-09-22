@@ -5,6 +5,11 @@ function initializeWorkspace() {
   data.savedPrompts ||= [];
   data.communityItems ||= [];
   data.communityLikes ||= [];
+  for (const n of data.notes)
+    n.personalDNA ||= structuredClone({
+      ...personalDefaults,
+      ...data.personalDNA,
+    });
   if (data.workspaceVersion === 1) return;
   data.beforeWorkspaceNotes = structuredClone(data.notes);
   const grouped = new Map();
@@ -59,7 +64,7 @@ function initializeWorkspace() {
 }
 function workspaceRender() {
   closePopover();
-  if (!["editor", "practice", "dna-manager"].includes(ui.view))
+  if (!["editor", "practice", "dna-manager", "dna-explore"].includes(ui.view))
     ui.view = "editor";
   if (note()) {
     ui.dnaSubject = note().subject;
@@ -69,10 +74,13 @@ function workspaceRender() {
   data.pinnedDNA ??= Object.keys(modePresets);
   ui.settingsScope = "subject";
   document.title =
-    (ui.view === "dna-manager" ? "DNA 관리" : note()?.title || "내 노트") +
-    " — Note DNA";
+    (ui.view === "dna-manager"
+      ? (note()?.subject || "") + " 과목 DNA 관리"
+      : ui.view === "dna-explore"
+        ? "DNA 둘러보기"
+        : note()?.title || "내 노트") + " — Note DNA";
   $("#app").innerHTML =
-    `<div class="app-shell desk-shell ${ui.detailsOpen ? "rail-mobile-open" : ""} ${ui.railOpen === false ? "rail-hidden" : ""}">${sidebar()}<div class="mobile-shade" data-action="mobile-close"></div><main class="workspace" id="main">${header()}<div class="desk-columns"><div class="desk-content">${ui.view === "dna-manager" ? dnaManagerPage() : ui.view === "practice" ? practicePage() : editor()}</div>${ui.view === "editor" && note() ? workspaceRail() : ""}</div></main></div>`;
+    `<div class="app-shell desk-shell ${ui.detailsOpen ? "rail-mobile-open" : ""} ${ui.railOpen === false ? "rail-hidden" : ""}">${sidebar()}<div class="mobile-shade" data-action="mobile-close"></div><main class="workspace" id="main">${header()}<div class="desk-columns ${ui.view === "dna-manager" ? "dna-workspace" : ""}">${ui.view === "dna-manager" ? dnaCoursePanel() : ""}<div class="desk-content">${ui.view === "dna-manager" ? dnaManagerPage() : ui.view === "dna-explore" ? dnaExplorePage() : ui.view === "practice" ? practicePage() : editor()}</div>${ui.view === "editor" && note() ? workspaceRail() : ""}</div></main></div>`;
   applyDnaPresentation();
 }
 
@@ -92,27 +100,25 @@ function workspaceNavigate(view) {
 }
 function workspaceSidebar() {
   const query = (ui.noteFilter || "").toLowerCase();
-  return `<aside class="sidebar desk-sidebar" aria-label="노트 목록"><div class="desk-brand">${icon("dna")}<strong>Note DNA</strong></div>${btn(icon("dna") + "<span>DNA</span>", "ws-dna-manager", "desk-note-link desk-dna-link " + (ui.view === "dna-manager" ? "current" : ""))}<div class="desk-notes-title"><span>노트</span>${btn(icon("plus"), "upload", "icon-button", 'aria-label="새 노트"')}</div><label class="desk-search">${icon("search")}<input id="desk-note-search" type="search" placeholder="노트 찾기" aria-label="노트 찾기" value="${esc(ui.noteFilter || "")}"></label><nav id="desk-note-list" aria-label="내 노트">${workspaceNoteLinks(query)}</nav><div class="desk-sidebar-foot">${icon("lock")} 이 기기에 저장됨</div></aside>`;
+  return `<aside class="sidebar desk-sidebar" aria-label="노트 목록"><div class="desk-brand">${icon("dna")}<strong>Note DNA</strong></div>${btn(icon("dna") + "<span>DNA</span>", "ws-dna-manager", "desk-note-link desk-dna-link " + (ui.view === "dna-manager" ? "current" : ""))}<div class="desk-notes-title"><span>노트</span>${btn(icon("plus"), "upload", "icon-button", 'aria-label="새 노트"')}</div><label class="desk-search">${icon("search")}<input id="desk-note-search" type="search" placeholder="노트 찾기" aria-label="노트 찾기" value="${esc(ui.noteFilter || "")}"></label><nav id="desk-note-list" aria-label="내 노트">${workspaceNoteLinks(query)}</nav>${btn(icon("globe") + "<span>DNA 둘러보기</span>", "dna-explore", "desk-note-link desk-explore-link " + (ui.view === "dna-explore" ? "current" : ""))}<div class="desk-sidebar-foot">${icon("lock")} 이 기기에 저장됨</div></aside>`;
 }
 function workspaceNoteLinks(query = "") {
   return (
     data.notes
       .filter((n) => (n.title + " " + n.subject).toLowerCase().includes(query))
-      .map((n) =>
-        btn(
-          icon("file") + `<span>${esc(n.title)}</span>`,
-          "open-note",
-          "desk-note-link " +
-            (n.id === ui.noteId && ui.view !== "dna-manager" ? "current" : ""),
-          `data-id="${esc(n.id)}" aria-current="${n.id === ui.noteId ? "page" : "false"}"`,
-        ),
+      .map(
+        (n) =>
+          `<div class="desk-note-row">${btn(icon("file") + `<span>${esc(n.title)}</span>`, "open-note", "desk-note-link " + (n.id === ui.noteId ? "current" : ""), `data-id="${esc(n.id)}" aria-current="${n.id === ui.noteId ? "page" : "false"}"`)}${btn(icon("moreVertical"), "note-row-menu", "icon-button note-row-menu", `data-id="${esc(n.id)}" aria-label="${esc(n.title)} 설정 메뉴"`)}</div>`,
       )
       .join("") || '<p class="desk-empty-list">노트가 없어요.</p>'
   );
 }
+
 function workspaceHeader() {
+  if (ui.view === "dna-explore")
+    return `<header class="topbar desk-topbar">${btn(icon("menu"), "mobile", "icon-button mobile-toggle", 'aria-label="노트 목록 열기"')}<div class="desk-tab">${icon("globe")}<span>DNA 둘러보기</span></div></header>`;
   if (ui.view === "dna-manager")
-    return `<header class="topbar desk-topbar">${btn(icon("menu"), "mobile", "icon-button mobile-toggle", 'aria-label="노트 목록 열기"')}<div class="desk-tab">${icon("dna")}<span>DNA 관리</span></div><div class="top-actions">${note() ? btn("노트로 돌아가기", "ws-note", "btn ghost") : ""}</div></header>`;
+    return `<header class="topbar desk-topbar">${btn(icon("menu"), "mobile", "icon-button mobile-toggle", 'aria-label="노트 목록 열기"')}<div class="desk-tab">${icon("dna")}<span>${esc(note()?.subject || "")} 과목 DNA 관리</span></div><div class="top-actions">${note() ? btn("노트로 돌아가기", "ws-note", "btn ghost") : ""}</div></header>`;
   return `<header class="topbar desk-topbar">${btn(icon("menu"), "mobile", "icon-button mobile-toggle", 'aria-label="노트 목록 열기"')}<div class="desk-tab">${icon(ui.view === "practice" ? "light" : "file")}<span>${esc(note()?.title || "내 노트")}${ui.view === "practice" ? " · 학습" : ""}</span></div><div class="top-actions">${note() ? `${ui.view === "practice" ? btn("노트로 돌아가기", "ws-note", "btn ghost") : ""}${btn(icon("upload") + "자료", "ws-materials", "btn ghost")}${btn(icon("download") + "공유", "ws-share", "btn ghost")}${btn(icon("more"), "ws-note-menu", "icon-button", 'aria-label="노트 메뉴"')}${ui.view !== "practice" ? btn(icon("panel"), "ws-rail", "icon-button", 'aria-label="오른쪽 패널 열기 또는 닫기"') : ""}` : ""}</div></header>`;
 }
 function workspaceEditor() {
@@ -120,41 +126,38 @@ function workspaceEditor() {
   if (!n)
     return `<div class="desk-welcome"><div>${icon("book")}<h1>한 과목, 한 권의 노트</h1><p>자료와 필기를 모아 나에게 맞는 방식으로 정리하세요.</p>${btn("첫 노트 만들기", "upload", "btn primary")}</div></div>`;
   let count = 0;
-  return `<article class="desk-document"><div class="desk-document-top"><span>${esc(n.subject)}</span><span class="save-status">${icon("check")} 저장됨</span></div><h1 id="note-title" contenteditable="true" role="textbox" aria-label="노트 제목" spellcheck="false">${esc(n.title)}</h1><div class="desk-document-meta"><span>${n.blocks.length}개 블록</span><span>최근 수정 ${dateLabel(n.updated)}</span>${btn("생성 설정", "ws-origin", "text-button")}</div>${ui.sourceOpen ? sourcePanel() : ""}<div class="note-canvas" aria-label="노트 편집기">${
-    n.blocks
-      .filter((b) => !isSideNoteBlock(b))
-      .map((b) => blockHTML(b, b.title ? ++count : count))
-      .join("") ||
-    '<p class="desk-placeholder">메모를 추가하거나 자료를 가져와 시작하세요.</p>'
-  }</div></article>`;
+  return `<article class="desk-document"><div class="desk-document-top"><span>${esc(n.subject)}</span><span class="save-status">${icon("check")} 저장됨</span></div><h1 id="note-title" contenteditable="true" role="textbox" aria-label="노트 제목" spellcheck="false">${esc(n.title)}</h1><div class="desk-document-meta"><span>${n.blocks.length}개 블록</span><span>최근 수정 ${dateLabel(n.updated)}</span>${btn("생성 설정", "ws-origin", "text-button")}</div>${ui.sourceOpen ? sourcePanel() : ""}<div class="note-canvas" aria-label="노트 편집기">${workspaceNoteRows(n)}</div></article>`;
 }
 function workspaceRail() {
   const n = note(),
     choices = dnaChoices().filter((t) => data.pinnedDNA.includes(t.id));
-  return `<aside class="desk-rail" aria-label="DNA 설정"><div class="desk-rail-scroll"><div class="desk-rail-heading"><h2>${icon("dna")} DNA 설정</h2><span id="dna-save-state">자동 저장</span></div><p class="desk-hint">고정한 DNA를 선택해 이 노트에 적용하세요.</p><div class="desk-template-list" role="group" aria-label="고정한 DNA">${choices.map((t) => btn(`<span>${esc(t.name)}</span>${n.activeTemplate === t.id && !dnaIsDirty() ? icon("check") : ""}`, "ws-template", n.activeTemplate === t.id && !dnaIsDirty() ? "selected" : "", `data-id="${esc(t.id)}" aria-pressed="${n.activeTemplate === t.id && !dnaIsDirty()}"`)).join("") || '<p class="desk-hint">고정한 DNA가 없어요. DNA 관리에서 핀을 눌러 추가하세요.</p>'}</div><p class="dna-active-caption">현재: ${esc((!dnaIsDirty() && dnaChoices().find((t) => t.id === n.activeTemplate)?.name) || "직접 수정한 설정")}</p>${btn("DNA 관리" + icon("right"), "ws-dna-manager", "desk-details-button")}${workspaceSideNotes()}</div><div class="desk-rail-bottom">${btn(icon("light") + "학습하기" + icon("arrow"), "ws-practice", "btn primary")}<small>문제 만들기 · 풀이 · 오답 확인</small></div></aside>`;
+  return `<aside class="desk-rail" aria-label="DNA 설정"><div class="desk-rail-scroll"><div class="desk-rail-heading"><h2>${icon("dna")} DNA 설정</h2><span id="dna-save-state">자동 저장</span></div><p class="desk-hint">고정한 DNA를 선택해 이 노트에 적용하세요.</p><div class="desk-template-list" role="group" aria-label="고정한 DNA">${choices.map((t) => btn(`<span>${esc(t.name)}</span>${n.activeTemplate === t.id && !dnaIsDirty() ? icon("check") : ""}`, "ws-template", n.activeTemplate === t.id && !dnaIsDirty() ? "selected" : "", `data-id="${esc(t.id)}" aria-pressed="${n.activeTemplate === t.id && !dnaIsDirty()}"`)).join("") || '<p class="desk-hint">고정한 DNA가 없어요. DNA 관리에서 핀을 눌러 추가하세요.</p>'}</div><p class="dna-active-caption">현재: ${esc((!dnaIsDirty() && dnaChoices().find((t) => t.id === n.activeTemplate)?.name) || "직접 수정한 설정")}</p>${btn("DNA 관리" + icon("right"), "ws-dna-manager", "desk-details-button")}</div><div class="desk-rail-bottom">${btn(icon("light") + "학습하기" + icon("arrow"), "ws-practice", "btn primary")}<small>문제 만들기 · 풀이 · 오답 확인</small></div></aside>`;
 }
 
-function workspacePersonalFields() {
-  const d = personalSettings(),
-    select = (k, t) => scopeSelect("personal", k, t, personalOptions[k], d[k]);
+function workspacePersonalFields(d = personalSettings(), scope = "personal") {
+  const select = (k, t) => scopeSelect(scope, k, t, personalOptions[k], d[k]);
   return (
     advancedSettings(
       "문체와 배치",
       select("tone", "문체") + select("layoutPreference", "표와 목록"),
-      "desk-dna",
+      scope + "-accordion",
     ) +
-    advancedSettings("번호 표기", numberingControls(d), "desk-dna") +
+    advancedSettings(
+      "번호 표기",
+      numberingControls(d, scope),
+      scope + "-accordion",
+    ) +
     advancedSettings(
       "강조",
       select("emphasisStyle", "강조 표시") +
         select("emphasisAmount", "강조 빈도"),
-      "desk-dna",
+      scope + "-accordion",
     )
   );
 }
 
-function workspaceNoteFields(d) {
-  const s = (k, t, opts) => scopeSelect("subject", k, t, opts, d[k]);
+function workspaceNoteFields(d, scope = "subject") {
+  const s = (k, t, opts) => scopeSelect(scope, k, t, opts, d[k]);
   const weights = [
     [0, "제외"],
     [1, "가볍게"],
@@ -176,7 +179,7 @@ function workspaceNoteFields(d) {
           "최대한 자세히",
         ]) +
         s("explanation", "설명 난이도", ["기초부터", "강의 수준", "전공 심화"]),
-      "desk-dna",
+      scope + "-accordion",
       true,
     ) +
     advancedSettings(
@@ -185,17 +188,17 @@ function workspaceNoteFields(d) {
         [true, "있음"],
         [false, "없음"],
       ]) +
-        `<div id="subject-formula" ${d.hasMath ? "" : "hidden"}>${s("formula", "수식 설명", ["결과만 표시", "의미와 사용법 설명", "유도 과정과 계산 예시", "수식 거의 없음"])}</div>` +
+        `<div id="${scope}-formula" ${d.hasMath ? "" : "hidden"}>${s("formula", "수식 설명", ["결과만 표시", "의미와 사용법 설명", "유도 과정과 계산 예시", "수식 거의 없음"])}</div>` +
         s("terminology", "용어 설명", [
           "핵심 용어만",
           "처음 등장할 때 설명",
           "모든 전문용어를 자세히 설명",
         ]),
-      "desk-dna",
+      scope + "-accordion",
     ) +
     advancedSettings(
       "내용 보충",
-      exampleControls(d, "subject") +
+      exampleControls(d, scope) +
         s("research", "자료 밖의 설명 보충", [
           ["lecture", "사용 안 함"],
           ["balanced", "필요한 부분"],
@@ -213,7 +216,7 @@ function workspaceNoteFields(d) {
           "표·비교표",
           "생성하지 않음",
         ]),
-      "desk-dna",
+      scope + "-accordion",
     )
   );
 }
@@ -238,7 +241,7 @@ function workspaceHabit() {
   );
   return `<p class="desk-hint">최근 ${entries.length}회 편집에서 설명을 평균 ${percent}% 줄였어요.</p>${percent >= 20 && personalSettings().learn ? `<p>노트 분량을 핵심만으로 바꿀까요?</p>${btn("적용", "ws-habit-apply", "btn secondary")}${btn("무시", "ws-habit-ignore", "btn ghost")}` : ""}`;
 }
-function workspaceCreateModal(append = false) {
+function appendSourcesModal(append = true) {
   ui.creation = { append, files: [], template: "개념 이해" };
   showModal(
     append ? "노트에 자료 추가" : "새 노트",
@@ -293,8 +296,10 @@ async function workspaceCreateNote() {
   const existing = data.notes.find(
     (n) => n.subject.trim().toLowerCase() === subject.toLowerCase(),
   );
-  const templateId = $("#ws-create-template").value,
-    prompt = $("#ws-create-prompt").value.trim();
+  const templateId = ui.creation.template || $("#ws-create-template")?.value,
+    prompt = ui.creation.editingDNA
+      ? ui.creation.prompt || ""
+      : $("#ws-create-prompt")?.value.trim() || "";
   if (existing && !ui.creation.files.length && !ui.creation.append) {
     closeModal();
     openNote(existing.id);
@@ -375,24 +380,35 @@ async function workspaceCreateNote() {
       data.subjectDNA[subject] = structuredClone(subjectDefaults);
       data.learningDNA[subject] = structuredClone(learningDefaults);
       applyWorkspaceTemplate(templateId, n);
+      if (ui.creation.editingDNA) {
+        n.personalDNA = structuredClone(ui.newPersonalDraft);
+        data.subjectDNA[subject] = structuredClone(ui.newSubjectDraft);
+        n.dnaPrompts = structuredClone(ui.creation.prompts || []);
+      }
     }
     n.runSettings = {
       ...n.runSettings,
-      prompt: prompt || n.runSettings?.prompt || "",
+      prompt: ui.creation.editingDNA
+        ? prompt
+        : prompt || n.runSettings?.prompt || "",
     };
     n.generationSettings = {
-      personal: personalSettings(),
+      personal: personalSettings(n.subject),
       note: subjectSettings(subject),
       prompt: n.runSettings.prompt,
       template: n.activeTemplate,
       createdAt: n.updated,
     };
+    if (!existing) {
+      n.savedDnaSignature = dnaSignature(n);
+      n.savedDnaId = templateId;
+    }
     if (!n.blocks.length)
       n.blocks.push({
         id: uid(),
-        title: "수업 메모",
-        type: "memo",
-        source: "memo",
+        title: "수업 내용",
+        type: "text",
+        source: "original",
         priority: 1,
         html: "<p>첫 내용을 기록해 보세요.</p>",
       });
@@ -418,8 +434,8 @@ function applyWorkspaceTemplate(id, n = note()) {
   else {
     const t = data.savedTemplates.find((t) => t.id === id);
     if (!t) return;
-    data.personalDNA = {
-      ...personalSettings(),
+    n.personalDNA = {
+      ...personalSettings(n.subject),
       ...pickSettings(t.personal || {}, personalDefaults),
     };
     data.subjectDNA[n.subject] = {
@@ -442,12 +458,19 @@ function templateSaveModal(id) {
   ui.editTemplateId = id || null;
   showModal(
     t ? "DNA 편집" : "현재 설정 DNA로 새로 저장",
-    `<label class="form-field"><span>이름</span><input id="ws-template-name" maxlength="80" value="${esc(t?.name || "")}" placeholder="예: 나의 전공 노트"></label><label class="form-field"><span>설명</span><textarea id="ws-template-description" maxlength="500">${esc(t?.description || "")}</textarea></label>${t ? '<label class="check-row"><input id="ws-template-refresh" type="checkbox">현재 노트의 DNA 설정으로 갱신</label>' : '<p class="desk-hint">사용자 DNA, 노트 DNA와 추가 요청을 함께 보관합니다.</p>'}`,
+    `<label class="form-field"><span>이름</span><input id="ws-template-name" maxlength="80" value="${esc(t?.name || "")}" placeholder="예: 나의 전공 노트"></label><label class="form-field"><span>설명</span><textarea id="ws-template-description" maxlength="500">${esc(t?.description || "")}</textarea></label>${t ? '<label class="check-row"><input id="ws-template-refresh" type="checkbox">현재 노트의 DNA 설정으로 갱신</label>' : '<p class="desk-hint">기본 DNA, 노트 DNA와 추가 요청을 함께 보관합니다.</p>'}`,
     btn("취소", "close-modal", "btn secondary") +
       btn("저장", "ws-commit-template", "btn primary"),
   );
 }
 function libraryModal(tab = "templates") {
+  if (tab === "community") {
+    closeModal();
+    ui.view = "dna-explore";
+    ui.libraryTab = "community";
+    render();
+    return;
+  }
   if (tab === "templates") {
     closeModal();
     ui.view = "dna-manager";
@@ -511,6 +534,7 @@ function libraryResults(tab, query = "", sort = "recent") {
       ...t,
       likes: (t.likes || 0) + (data.communityLikes.includes(t.id) ? 1 : 0),
       imports: (t.imports || 0) + (data.communityImports?.[t.id] || 0),
+      downloads: (t.downloads || 0) + (data.communityDownloads?.[t.id] || 0),
     }));
   if (tab === "community")
     items.sort((a, b) =>
@@ -518,6 +542,8 @@ function libraryResults(tab, query = "", sort = "recent") {
         ? String(b.date).localeCompare(a.date)
         : (b[sort] || 0) - (a[sort] || 0),
     );
+  if (tab === "community" && ui.view === "dna-explore")
+    return dnaExploreCards(items);
   return items.length
     ? items
         .map(
@@ -542,7 +568,11 @@ function libraryPreview(id, kind) {
     `<p>${esc(t.description || t.text || "")}</p>${t.settings ? `<dl class="desk-definition"><dt>노트 분량</dt><dd>${esc(t.settings.length)}</dd><dt>용어 설명</dt><dd>${esc(t.settings.terminology)}</dd><dt>예시</dt><dd>${esc((t.settings.exampleTypes || []).join(" · ") || "없음")}</dd><dt>문체</dt><dd>${esc(t.personal?.tone || "쉬운 설명체")}</dd></dl><div class="desk-sample">${esc(t.example || "개념을 이해한 뒤 핵심과 예시를 연결하는 노트 구성입니다.")}</div>` : `<div class="desk-sample">${esc(t.text || "")}</div>`}`,
     btn(
       "보관함",
-      kind === "prompts" ? "dna-prompt-library" : "ws-library",
+      kind === "prompts"
+        ? "dna-prompt-library"
+        : kind === "community"
+          ? "dna-explore"
+          : "ws-library",
       "btn secondary",
     ) +
       btn(
@@ -602,19 +632,20 @@ function buildWorkspaceExport(options, n = note()) {
 function practicePage() {
   const n = note();
   if (!n) return '<div class="desk-welcome">먼저 노트를 만들어 주세요.</div>';
-  const sets = (n.problemSets ||= []),
-    current = sets.find((s) => s.id === ui.activeSetId);
-  return `<section class="practice-page"><header class="practice-heading"><div><span class="desk-eyebrow">${esc(n.title)}</span><h1>학습하기</h1><p>배운 내용을 확인하고, 헷갈린 부분을 다시 읽어보세요.</p></div>${btn(icon("plus") + "문제 만들기", "ws-question-settings", "btn primary")}</header>${current ? practiceSession(current) : `<div class="practice-start"><div>${icon("light")}<h2>이 노트로 연습해 볼까요?</h2><p>범위와 문제 유형을 고르면 노트의 내용을 바탕으로 연습 문제를 만들어요.</p>${btn("문제 생성 설정", "ws-question-settings", "btn secondary")}</div></div><h2 class="desk-section-title">저장한 문제 세트</h2><div class="practice-set-list">${sets.length ? sets.map((s) => `<article><div><strong>${esc(s.name)}</strong><p>${s.questions.length}문제 · ${esc(s.settings.questionDifficulty)} · ${s.submitted ? "풀이 완료" : "풀이 중"}</p></div>${btn("열기", "ws-open-set", "btn secondary", `data-id="${s.id}"`)}${btn(icon("trash"), "ws-delete-set", "icon-button", `data-id="${s.id}" aria-label="문제 세트 삭제"`)}</article>`).join("") : '<p class="desk-hint">만든 문제와 풀이 기록은 이 노트에 저장됩니다.</p>'}</div>`}</section>`;
+  if (ui.learningNoteId !== n.id) {
+    ui.newLearningDraft = structuredClone(learningSettings(n.subject));
+    ui.learningNoteId = n.id;
+  }
+  const current = currentProblemSet();
+  return `<section class="practice-page"><header class="practice-heading"><div><span class="desk-eyebrow">${esc(n.title)}</span><h1>학습하기</h1><p>문제를 준비하고, 원하는 문제를 골라 풀어보세요.</p></div></header>${current ? practiceSession(current) : `<section class="practice-attachments"><div class="practice-section-heading"><h2>참고자료</h2><label class="btn secondary">${icon("plus")}자료 추가<input id="practice-files" type="file" multiple accept=".pdf,.ppt,.pptx,.txt,.md,.png,.jpg,.jpeg" hidden></label></div><p class="desk-hint">기출문제와 예상문제를 함께 보관하세요. TXT·Markdown은 출제 참고 내용으로 반영하며, PDF·이미지 분석은 AI 연결 후 제공됩니다.</p><div id="practice-materials">${practiceMaterialList(n)}</div><p id="practice-file-status" role="status"></p></section><div class="practice-workbench"><section class="practice-settings"><h2>문제 만들기</h2><p class="desk-hint">노트와 선택한 텍스트 자료에서 연습 문제를 구성합니다.</p>${learningFields(ui.newLearningDraft, "new-learning")}<p class="desk-hint">범위는 단원 제목 또는 p.1-5로 입력하세요. 서술형은 해설을 보고 직접 확인합니다.</p><p id="ws-question-error" role="alert" class="form-error"></p>${btn("문제 만들기", "ws-generate-questions", "btn primary")}</section><section class="practice-library"><h2>문제 목록 <small>${(n.problemSets || []).length}</small></h2><div class="practice-set-list">${(n.problemSets || []).map((s) => `<article class="${ui.latestSetId === s.id ? "new-question-set" : ""}"><button class="practice-set-open" data-action="ws-open-set" data-id="${esc(s.id)}"><strong>${esc(s.name)}</strong><span>${s.questions.length}문제 · ${esc(s.settings.questionDifficulty)} · ${s.submitted ? "풀이 완료" : Object.keys(s.answers).length ? "풀이 중" : "풀기 전"}</span></button>${btn(icon("trash"), "ws-delete-set", "icon-button", `data-id="${esc(s.id)}" aria-label="${esc(s.name)} 삭제"`)}</article>`).join("") || '<p class="desk-hint">문제를 만들면 여기에 추가됩니다. 목록에서 선택해 풀이를 시작하세요.</p>'}</div></section></div>`}</section>`;
 }
+
 function questionSettingsModal() {
-  ui.newLearningDraft = structuredClone(learningSettings(note().subject));
-  showModal(
-    "문제 생성 설정",
-    `<p class="desk-hint">현재는 노트의 제목과 본문을 이용한 연습 문제를 만듭니다. AI 심화 출제는 연결 전이며, 서술형은 해설을 보고 직접 확인합니다.</p>${learningFields(ui.newLearningDraft, "new-learning")}<p class="desk-hint">범위는 단원 제목 또는 p.1-5처럼 입력하세요. 비워두면 전체입니다.</p><p id="ws-question-error" class="form-error" role="alert"></p>`,
-    btn("취소", "close-modal", "btn secondary") +
-      btn("문제 만들기", "ws-generate-questions", "btn primary"),
-  );
+  ui.activeSetId = null;
+  ui.view = "practice";
+  render();
 }
+
 function questionBlocks(n, range) {
   const eligible = n.blocks.filter(
     (b) => b.title && workspaceText(b.html).trim().length >= 20,
@@ -655,6 +686,7 @@ function buildQuestions(n, settings) {
         blockId: block.id,
         chapter: block.chapter || block.title,
         explanation: excerpt,
+        practiceMaterialId: block.practiceMaterialId,
       };
     const related =
       blocks.find((b) => b.id !== block.id && b.chapter !== block.chapter) ||
@@ -665,6 +697,7 @@ function buildQuestions(n, settings) {
         : "";
     if (context) {
       q.relatedBlockId = related.id;
+      q.relatedPracticeMaterialId = related.practiceMaterialId;
       q.explanation +=
         "\n연결할 내용: " + workspaceText(related.html).slice(0, 220);
     }
@@ -712,7 +745,7 @@ function practiceSession(set) {
     ),
     right = graded.filter((q) => set.results[q.id] === true).length;
   const questions = ui.onlyWrong ? wrong : set.questions;
-  return `<div class="practice-session-head"><div><h2>${esc(set.name)}</h2><p>${set.questions.length}문제 · ${esc(set.settings.examRange || "전체 범위")}</p></div>${btn("세트 목록", "ws-set-list", "btn ghost")}</div>${set.submitted ? `<div class="practice-result"><strong>${right} / ${graded.length} 정답</strong><span>${graded.length < set.questions.length ? "서술형을 확인하면 점수에 반영돼요." : "채점 완료"} · 오답 ${wrong.length}개</span>${btn(ui.onlyWrong ? "전체 보기" : "오답만 보기", "ws-wrong-filter", "btn secondary")}${wrong.length ? btn("오답 다시 풀기", "ws-retry-wrong", "btn secondary") : ""}</div>` : ""}<div class="practice-questions">${questions.map((q, index) => `<article class="practice-question"><div class="question-label"><span>${index + 1}. ${q.type === "주관식" ? "서술형" : esc(q.type)}</span>${set.submitted ? `<span class="${set.results?.[q.id] === false ? "wrong-answer" : "correct-answer"}">${set.results?.[q.id] === true ? "정답" : set.results?.[q.id] === false ? "오답" : "직접 확인"}</span>` : ""}</div><p class="question-prompt">${esc(q.prompt)}</p>${q.options ? `<div class="answer-options">${q.options.map((answer, i) => `<label><input type="radio" name="answer-${q.id}" data-answer="${q.id}" value="${esc(answer)}" ${set.answers[q.id] === answer ? "checked" : ""} ${set.submitted ? "disabled" : ""}><span>${q.type === "OX" ? "" : i + 1 + ". "}${esc(answer)}</span></label>`).join("")}</div>` : `<label class="form-field"><span class="sr-only">${index + 1}번 답안</span><textarea data-answer="${q.id}" rows="${q.selfGrade ? 3 : 1}" ${set.submitted ? "readonly" : ""} placeholder="답안을 입력하세요">${esc(set.answers[q.id] || "")}</textarea></label>`}${set.submitted ? `<div class="question-explanation"><strong>${q.selfGrade ? "참고 해설" : "정답: " + esc(q.correct)}</strong><p>${esc(q.explanation)}</p>${q.selfGrade ? `<div class="desk-inline-actions">${btn("이해했어요", "ws-self-grade", "btn secondary", `data-id="${q.id}" data-correct="true"`)}${btn("다시 공부할래요", "ws-self-grade", "btn secondary", `data-id="${q.id}" data-correct="false"`)}</div>` : ""}${q.type === "단답형" ? "<small>노트 제목과 일치하는지 확인한 결과입니다. 같은 뜻의 답이라면 직접 정답 처리할 수 있어요.</small>" + btn("정답으로 인정", "ws-self-grade", "text-button", `data-id="${q.id}" data-correct="true"`) : ""}<div class="question-source">${btn("관련 노트 보기", "ws-question-source", "text-button", `data-id="${q.blockId}"`)}${q.relatedBlockId ? btn("연결 개념 보기", "ws-question-source", "text-button", `data-id="${q.relatedBlockId}"`) : ""}<label><input type="checkbox" data-wrong="${q.id}" ${set.wrong?.[q.id] ? "checked" : ""}>오답으로 표시</label></div></div>` : ""}</article>`).join("") || '<p class="desk-hint">표시할 오답이 없어요.</p>'}</div>${!set.submitted ? `<div class="practice-submit"><p id="ws-answer-error" role="alert"></p>${btn("제출하고 확인하기", "ws-submit-answers", "btn primary")}</div>` : ""}`;
+  return `<div class="practice-session-head"><div><h2>${esc(set.name)}</h2><p>${set.questions.length}문제 · ${esc(set.settings.examRange || "전체 범위")}</p></div>${btn("문제 목록", "ws-set-list", "btn ghost")}</div>${set.submitted ? `<div class="practice-result"><strong>${right} / ${graded.length} 정답</strong><span>${graded.length < set.questions.length ? "서술형을 확인하면 점수에 반영돼요." : "채점 완료"} · 오답 ${wrong.length}개</span>${btn("전체 다시 풀기", "ws-retry-all", "btn secondary")}${btn(ui.onlyWrong ? "전체 보기" : "오답만 보기", "ws-wrong-filter", "btn secondary")}${wrong.length ? btn("오답 다시 풀기", "ws-retry-wrong", "btn secondary") : ""}</div>` : ""}<div class="practice-questions">${questions.map((q, index) => `<article class="practice-question"><div class="question-label"><span>${index + 1}. ${q.type === "주관식" ? "서술형" : esc(q.type)}</span>${set.submitted ? `<span class="${set.results?.[q.id] === false ? "wrong-answer" : "correct-answer"}">${set.results?.[q.id] === true ? "정답" : set.results?.[q.id] === false ? "오답" : "직접 확인"}</span>` : ""}</div><p class="question-prompt">${esc(q.prompt)}</p>${q.options ? `<div class="answer-options">${q.options.map((answer, i) => `<label><input type="radio" name="answer-${q.id}" data-answer="${q.id}" value="${esc(answer)}" ${set.answers[q.id] === answer ? "checked" : ""} ${set.submitted ? "disabled" : ""}><span>${q.type === "OX" ? "" : i + 1 + ". "}${esc(answer)}</span></label>`).join("")}</div>` : `<label class="form-field"><span class="sr-only">${index + 1}번 답안</span><textarea data-answer="${q.id}" rows="${q.selfGrade ? 3 : 1}" ${set.submitted ? "readonly" : ""} placeholder="답안을 입력하세요">${esc(set.answers[q.id] || "")}</textarea></label>`}${set.submitted ? `<div class="question-explanation"><strong>${q.selfGrade ? "참고 해설" : "정답: " + esc(q.correct)}</strong><p>${esc(q.explanation)}</p>${q.selfGrade ? `<div class="desk-inline-actions">${btn("이해했어요", "ws-self-grade", "btn secondary", `data-id="${q.id}" data-correct="true"`)}${btn("다시 공부할래요", "ws-self-grade", "btn secondary", `data-id="${q.id}" data-correct="false"`)}</div>` : ""}${q.type === "단답형" ? "<small>노트 제목과 일치하는지 확인한 결과입니다. 같은 뜻의 답이라면 직접 정답 처리할 수 있어요.</small>" + btn("정답으로 인정", "ws-self-grade", "text-button", `data-id="${q.id}" data-correct="true"`) : ""}<div class="question-source">${btn(q.practiceMaterialId ? "참고자료 보기" : "관련 노트 보기", q.practiceMaterialId ? "practice-open-file" : "ws-question-source", "text-button", `data-id="${esc(q.practiceMaterialId || q.blockId)}"`)}${q.relatedBlockId ? btn("연결 개념 보기", q.relatedPracticeMaterialId ? "practice-open-file" : "ws-question-source", "text-button", `data-id="${esc(q.relatedPracticeMaterialId || q.relatedBlockId)}"`) : ""}<label><input type="checkbox" data-wrong="${q.id}" ${set.wrong?.[q.id] ? "checked" : ""}>오답으로 표시</label></div></div>` : ""}</article>`).join("") || '<p class="desk-hint">표시할 오답이 없어요.</p>'}</div>${!set.submitted ? `<div class="practice-submit"><p id="ws-answer-error" role="alert"></p>${btn("제출하고 확인하기", "ws-submit-answers", "btn primary")}</div>` : ""}`;
 }
 function currentProblemSet() {
   return note()?.problemSets?.find((s) => s.id === ui.activeSetId);
@@ -778,16 +811,10 @@ function workspaceConfirm(kind, id, label) {
   );
 }
 function handleWorkspaceAction(action, el = {}) {
+  if (handleDnaExploreAction(action, el)) return true;
+  if (handleNoteFlowAction(action, el)) return true;
   if (handleDnaManagerAction(action, el)) return true;
   const n = note();
-  if (
-    ["outline", "ws-question-source"].includes(action) &&
-    isSideNoteBlock(n?.blocks.find((b) => b.id === el.dataset.id) || {})
-  ) {
-    ui.railOpen = true;
-    if (innerWidth <= 760) ui.detailsOpen = true;
-    render();
-  }
   switch (action) {
     case "home":
     case "ws-note":
@@ -819,10 +846,32 @@ function handleWorkspaceAction(action, el = {}) {
       } else ui.railOpen = ui.railOpen === false;
       render();
       return true;
-    case "add-memo":
-      ui.railOpen = true;
-      if (innerWidth <= 760) ui.detailsOpen = true;
-      return false;
+    case "add-memo": {
+      snapshot();
+      const anchor =
+        el.dataset?.anchor ||
+        n.blocks.find((b) => b.id === ui.selected)?.anchorBlockId ||
+        ui.selected ||
+        n.blocks.find((b) => !isSideNoteBlock(b))?.id ||
+        null;
+      const memo = {
+        id: uid(),
+        title: "",
+        type: "memo",
+        source: "memo",
+        priority: 1,
+        anchorBlockId: anchor,
+        html: "<p><br></p>",
+      };
+      n.blocks.push(memo);
+      ui.selected = memo.id;
+      changed();
+      render();
+      const content = $("#block-" + CSS.escape(memo.id) + " .block-content");
+      content?.focus();
+      content?.scrollIntoView({ block: "center" });
+      return true;
+    }
     case "ws-practice":
       ui.view = "practice";
       ui.activeSetId = null;
@@ -1259,14 +1308,14 @@ function handleWorkspaceAction(action, el = {}) {
     case "ws-reset-dna":
       showModal(
         "DNA 기본값 복원",
-        "<p>사용자 DNA와 현재 노트 DNA를 추천값으로 복원합니다. 본문과 저장한 DNA은 유지됩니다.</p>",
+        "<p>기본 DNA와 현재 노트 DNA를 추천값으로 복원합니다. 본문과 저장한 DNA은 유지됩니다.</p>",
         btn("취소", "close-modal", "btn secondary") +
           btn("복원", "ws-confirm-reset", "btn primary"),
       );
       return true;
     case "ws-confirm-reset":
       snapshot();
-      data.personalDNA = structuredClone(personalDefaults);
+      n.personalDNA = structuredClone(personalDefaults);
       data.subjectDNA[n.subject] = structuredClone(subjectDefaults);
       n.activeTemplate = "개념 이해";
       save();
@@ -1301,7 +1350,7 @@ function handleWorkspaceAction(action, el = {}) {
       return true;
     case "ws-generate-questions": {
       const settings = structuredClone(ui.newLearningDraft),
-        questions = buildQuestions(n, settings);
+        questions = buildQuestions(practiceQuestionSource(n), settings);
       if (!questions.length) {
         $("#ws-question-error").textContent =
           "선택한 범위에 충분한 본문이 없거나 문제 개수가 0입니다. 범위와 개수를 확인해 주세요.";
@@ -1309,7 +1358,8 @@ function handleWorkspaceAction(action, el = {}) {
       }
       const set = {
         id: uid(),
-        name: dateLabel(new Date()) + " 연습",
+        name:
+          dateLabel(new Date()) + " 연습 " + ((n.problemSets?.length || 0) + 1),
         settings,
         questions,
         answers: {},
@@ -1320,12 +1370,13 @@ function handleWorkspaceAction(action, el = {}) {
       n.problemSets ||= [];
       n.problemSets.unshift(set);
       data.learningDNA[n.subject] = settings;
-      ui.activeSetId = set.id;
+      ui.activeSetId = null;
+      ui.latestSetId = set.id;
       ui.onlyWrong = false;
       ui.view = "practice";
       save();
-      closeModal();
       render();
+      toast("문제 목록에 추가했어요. 선택하면 풀이를 시작합니다.");
       if (questions.length < settings.questionCount)
         toast(
           "본문에서 만들 수 있는 " + questions.length + "문제를 준비했어요.",
@@ -1366,19 +1417,26 @@ function handleWorkspaceAction(action, el = {}) {
       ui.onlyWrong = !ui.onlyWrong;
       render();
       return true;
+    case "ws-retry-all":
     case "ws-retry-wrong": {
       const set = currentProblemSet(),
-        questions = set.questions.filter((q) => set.wrong[q.id]);
+        questions =
+          action === "ws-retry-all"
+            ? set.questions
+            : set.questions.filter((q) => set.wrong[q.id]);
       if (!questions.length) return true;
       const retry = {
         ...structuredClone(set),
         id: uid(),
-        name: set.name + " · 오답 복습",
+        name:
+          set.name +
+          (action === "ws-retry-all" ? " · 다시 풀기" : " · 오답 복습"),
         questions: structuredClone(questions),
         answers: {},
         results: {},
         wrong: {},
         submitted: false,
+        submittedAt: null,
       };
       n.problemSets.unshift(retry);
       ui.activeSetId = retry.id;
@@ -1729,7 +1787,7 @@ function ensureDnaState(n) {
 }
 function dnaSignature(n = note()) {
   return JSON.stringify({
-    personal: personalSettings(),
+    personal: personalSettings(n.subject),
     settings: subjectSettings(n.subject),
     prompt: n.runSettings?.prompt || "",
     prompts: dnaPrompts(n),
@@ -1767,7 +1825,7 @@ function dnaCatalog(query = "") {
       .includes(query.toLowerCase()),
   );
   return [
-    [true, "기본 DNA"],
+    [true, "기본 제공 DNA"],
     [false, "사용자 지정 DNA"],
   ]
     .map(
@@ -1791,7 +1849,7 @@ function dnaCatalog(query = "") {
 }
 function dnaManagerPage() {
   const n = note();
-  return `<section class="dna-manager-page"><header class="dna-manager-heading"><span class="desk-eyebrow">나에게 맞는 정리 방식</span><h1>DNA 관리</h1><p>DNA를 선택하고 필요한 부분만 조절하세요. 핀을 걸면 노트 옆에서 바로 선택할 수 있어요.</p></header><label class="desk-search dna-catalog-search">${icon("search")}<input id="dna-catalog-query" aria-label="DNA 검색" placeholder="DNA 이름·설명 검색" value="${esc(ui.dnaQuery || "")}"></label><div id="dna-catalog">${dnaCatalog(ui.dnaQuery || "")}</div><div class="desk-inline-actions dna-library-tools">${btn("DNA 파일 가져오기", "ws-import-package", "text-button")}${btn("공유 DNA 둘러보기", "dna-community", "text-button")}</div>${n ? `<section class="dna-detail-section"><header class="dna-detail-heading"><div><h2>상세 설정</h2><p>${esc(n.title)}에 적용되는 DNA</p></div>${btn("현재 설정 DNA로 새로 저장", "ws-save-template", "btn primary", dnaIsDirty() ? "" : "disabled")}</header><p class="desk-hint" id="dna-change-status">${dnaIsDirty() ? "변경한 설정은 현재 노트에 자동 저장됩니다. 새 DNA로 보관할 수 있어요." : "설정을 변경하면 새 DNA로 저장할 수 있어요."}</p><div class="dna-manager-columns"><section class="dna-manager-settings"><h3>사용자 DNA <small>모든 노트에 적용</small></h3>${workspacePersonalFields()}</section><section class="dna-manager-settings"><div class="dna-note-heading"><h3>노트 DNA <small>${esc(n.title)}</small></h3>${btn("DNA 추천", "dna-recommend", "btn secondary")}</div>${workspaceNoteFields(subjectSettings(n.subject))}${advancedSettings("프롬프트", `<label class="form-field"><span>이 DNA의 프롬프트</span><textarea id="dna-prompt" rows="5" maxlength="2000" placeholder="예: 비슷한 개념은 비교표로 정리해줘.">${esc(n.runSettings?.prompt || "")}</textarea></label><p class="desk-hint">DNA를 저장하면 이 요청문과 보관함도 함께 저장돼요.</p><div class="desk-inline-actions">${btn("프롬프트 보관함", "dna-prompt-library", "btn secondary")}${btn("현재 프롬프트 보관", "ws-new-prompt", "text-button")}</div>`, "desk-dna")}</section></div>${advancedSettings("미리보기", `<div id="dna-preview">${liveDnaPreview()}</div><p class="desk-hint">현재 노트에 즉시 반영되는 표시입니다. 원문은 보존됩니다. 문체는 준비된 표현과 문장 배치를 반영하며, 새로운 설명·AI 문장 재작성은 연결 전입니다.</p>`, "desk-dna")}</section>` : `<div class="desk-hint">노트를 만들면 DNA를 적용하고 상세 설정을 조절할 수 있어요.</div>${btn("새 노트", "upload", "btn primary")}`}</section>`;
+  return `<section class="dna-manager-page"><header class="dna-manager-heading"><span class="desk-eyebrow">나에게 맞는 정리 방식</span><h1>${esc(n?.subject || "")} 과목 DNA 관리</h1><p>DNA를 선택하고 필요한 부분만 조절하세요. 핀을 걸면 노트 옆에서 바로 선택할 수 있어요.</p></header><label class="desk-search dna-catalog-search">${icon("search")}<input id="dna-catalog-query" aria-label="DNA 검색" placeholder="DNA 이름·설명 검색" value="${esc(ui.dnaQuery || "")}"></label><div id="dna-catalog">${dnaCatalog(ui.dnaQuery || "")}</div><div class="desk-inline-actions dna-library-tools">${btn("DNA 파일 가져오기", "ws-import-package", "text-button")}${btn("공유 DNA 둘러보기", "dna-community", "text-button")}</div>${n ? `<section class="dna-detail-section"><header class="dna-detail-heading"><div><h2>상세 설정</h2><p>${esc(n.title)}에 적용되는 DNA</p></div>${btn("현재 설정 DNA로 새로 저장", "ws-save-template", "btn primary", dnaIsDirty() ? "" : "disabled")}</header><p class="desk-hint" id="dna-change-status">${dnaIsDirty() ? "변경한 설정은 현재 노트에 자동 저장됩니다. 새 DNA로 보관할 수 있어요." : "설정을 변경하면 새 DNA로 저장할 수 있어요."}</p><section class="dna-preview-fixed" aria-label="미리보기"><h3>미리보기</h3><div id="dna-preview">${liveDnaPreview()}</div><p class="desk-hint">현재 노트에 즉시 반영되는 모습입니다. 원문은 보존돼요.</p></section><div class="dna-manager-columns"><section class="dna-manager-settings"><h3>기본 DNA <small>이 노트에 적용</small></h3>${workspacePersonalFields()}</section><section class="dna-manager-settings"><div class="dna-note-heading"><h3>노트 DNA <small>${esc(n.title)}</small></h3>${btn("DNA 추천", "dna-recommend", "btn secondary")}</div>${workspaceNoteFields(subjectSettings(n.subject))}${advancedSettings("프롬프트", `<label class="form-field"><span>이 DNA의 프롬프트</span><textarea id="dna-prompt" rows="5" maxlength="2000" placeholder="예: 비슷한 개념은 비교표로 정리해줘.">${esc(n.runSettings?.prompt || "")}</textarea></label><p class="desk-hint">DNA를 저장하면 이 요청문과 보관함도 함께 저장돼요.</p><div class="desk-inline-actions">${btn("프롬프트 보관함", "dna-prompt-library", "btn secondary")}${btn("현재 프롬프트 보관", "ws-new-prompt", "text-button")}</div>`, "subject-accordion")}</section></div></section>` : `<div class="desk-hint">노트를 만들면 DNA를 적용하고 상세 설정을 조절할 수 있어요.</div>${btn("새 노트", "upload", "btn primary")}`}</section>`;
 }
 function handleDnaManagerAction(action, el) {
   if (action === "dna-read-more") {
@@ -2020,7 +2078,7 @@ function applyDnaPresentation() {
   let number = 0;
   for (const el of $$(".desk-document .note-block")) {
     const b = note().blocks.find((b) => b.id === el.dataset.block);
-    if (!b) continue;
+    if (!b || isSideNoteBlock(b)) continue;
     const num = $(".section-number", el);
     if (num) num.textContent = dnaNumberToken(d.numberingLevel1, ++number);
     const original = $(".block-content", el);
@@ -2072,3 +2130,311 @@ document.addEventListener("input", (e) => {
     }
   }
 });
+function workspaceCreateModal(append = false) {
+  if (append) {
+    appendSourcesModal(true);
+    return;
+  }
+  ui.creation = {
+    append: false,
+    files: [],
+    template: "개념 이해",
+    editingDNA: true,
+    prompt: "",
+    prompts: [],
+  };
+  ui.newPersonalDraft = structuredClone(personalDefaults);
+  ui.newSubjectDraft = applySubjectMode(
+    structuredClone(subjectDefaults),
+    "개념 이해",
+  );
+  showModal(
+    "새 노트",
+    `<label class="form-field"><span>과목 이름</span><input id="ws-course-name" maxlength="80" placeholder="예: 운영체제"></label><p class="desk-hint">과목마다 하나의 노트에 자료와 필기를 모아요.</p><label class="desk-upload">${icon("upload")}<strong>자료 선택</strong><span>PDF, PPT, 교재, 개인 필기 · 파일당 25MB</span><input id="ws-source-files" type="file" multiple accept=".pdf,.ppt,.pptx,.doc,.docx,.txt,.md,.png,.jpg,.jpeg"></label><div id="ws-picked-materials"></div><h3 class="creation-dna-title">DNA 선택</h3><div id="creation-dna-choices" class="desk-template-list">${creationDnaChoices()}</div><details class="creation-dna-details"><summary>상세 설정</summary><div id="creation-dna-fields">${creationDnaFields()}</div></details><p class="desk-hint">텍스트는 본문으로 가져옵니다. PDF·PPT 분석은 AI 연결 전이며 원본을 보관합니다.</p><p id="ws-create-error" role="alert" class="form-error"></p>`,
+    btn("취소", "close-modal", "btn secondary") +
+      btn("노트 만들기", "create-note", "btn primary"),
+  );
+}
+function creationDnaChoices() {
+  return dnaChoices()
+    .map((t) =>
+      btn(
+        `<span>${esc(t.name)}</span>${ui.creation.template === t.id ? icon("check") : ""}`,
+        "creation-dna-select",
+        ui.creation.template === t.id ? "selected" : "",
+        `data-id="${esc(t.id)}" aria-pressed="${ui.creation.template === t.id}"`,
+      ),
+    )
+    .join("");
+}
+function creationDnaFields() {
+  return `<div id="creation-dna-preview">${scopedPreview(deriveDNA(ui.newPersonalDraft, ui.newSubjectDraft))}</div><section class="dna-manager-settings"><h3>기본 DNA <small>새 노트에만 적용</small></h3>${workspacePersonalFields(ui.newPersonalDraft, "new-personal")}</section><section class="dna-manager-settings"><h3>노트 DNA</h3>${workspaceNoteFields(ui.newSubjectDraft, "new-subject")}${advancedSettings("프롬프트", `<label class="form-field"><span>DNA에 포함된 프롬프트</span><textarea id="creation-dna-prompt" rows="3" maxlength="2000">${esc(ui.creation.prompt || "")}</textarea></label>`, "new-subject-accordion")}</section>`;
+}
+function refreshCreateDnaPreview() {
+  const p = $("#creation-dna-preview");
+  if (p)
+    p.innerHTML = scopedPreview(
+      deriveDNA(ui.newPersonalDraft, ui.newSubjectDraft),
+    );
+}
+function workspaceNoteRows(n) {
+  const mains = n.blocks.filter((b) => !isSideNoteBlock(b));
+  const buckets = new Map(mains.map((b) => [b.id, []]));
+  if (!mains.length) buckets.set("unattached", []);
+  const known = {
+    analogy: "demand",
+    "os-walkthrough": "os-replace",
+    "memory-example": "memory-address",
+    "alg-example": "recurrence",
+  };
+  for (const b of n.blocks.filter(isSideNoteBlock)) {
+    let anchor = b.anchorBlockId;
+    if (!buckets.has(anchor)) anchor = known[b.id];
+    if (!buckets.has(anchor)) {
+      const index = n.blocks.indexOf(b);
+      anchor =
+        [...n.blocks.slice(0, index)].reverse().find((x) => !isSideNoteBlock(x))
+          ?.id ||
+        mains[0]?.id ||
+        "unattached";
+    }
+    buckets.get(anchor).push(b);
+  }
+  const d = dna(),
+    enabled = d.exampleTypes.length > 0 && d.exampleCount > 0;
+  const rows = mains.length
+    ? mains
+    : [{ id: "unattached", title: "", html: "" }];
+  return rows
+    .map((b, i) => {
+      const companions = buckets.get(b.id) || [],
+        examples = companions.filter(isExampleBlock),
+        memos = companions.filter((x) => !isExampleBlock(x));
+      const examplesHTML =
+        examples.map((x, j) => blockHTML(x, j + 1)).join("") +
+        (b.example
+          ? `<details class="side-example"><summary>예제</summary><p>${esc(b.example)}</p></details>`
+          : "");
+      return `<div class="note-content-row" data-anchor="${esc(b.id)}"><div class="note-main-column">${b.id === "unattached" ? '<p class="desk-placeholder">자료를 추가하거나 본문을 작성해 보세요.</p>' : blockHTML(b, i + 1)}</div><aside class="note-margin" aria-label="${esc(b.title || "노트")} 보조 설명"><div class="margin-toolbar"><span>${examples.length || b.example ? "예제 · 메모" : "메모"}</span>${btn(icon("plus") + "메모 추가", "add-memo", "text-button", `data-anchor="${b.id === "unattached" ? "" : esc(b.id)}"`)}</div>${enabled ? examplesHTML : examplesHTML ? `<details class="side-example"><summary>보관한 예제</summary>${examplesHTML}</details>` : ""}${memos.map((x, j) => blockHTML(x, j + 1)).join("")}</aside></div>`;
+    })
+    .join("");
+}
+function practiceMaterialList(n) {
+  return (
+    (n.practiceMaterials || [])
+      .map(
+        (m) =>
+          `<div class="practice-file"><label><input type="checkbox" data-practice-use="${esc(m.id)}" ${m.selected !== false ? "checked" : ""}><span>${esc(m.name)}<small>${m.text ? "텍스트 출제 반영 가능" : "원본 보관 · AI 분석 연결 전"}</small></span></label><select data-practice-kind="${esc(m.id)}" aria-label="${esc(m.name)} 자료 종류">${["기출문제", "예상문제", "기타 자료"].map((k) => `<option ${m.kind === k ? "selected" : ""}>${k}</option>`).join("")}</select>${btn("열기", "practice-open-file", "text-button", `data-id="${esc(m.id)}"`)}${btn("삭제", "practice-delete-file", "text-button", `data-id="${esc(m.id)}"`)}</div>`,
+      )
+      .join("") || '<p class="desk-hint">추가한 참고자료가 없어요.</p>'
+  );
+}
+function practiceQuestionSource(n) {
+  return {
+    ...n,
+    blocks: [
+      ...n.blocks,
+      ...(n.practiceMaterials || [])
+        .filter((m) => m.selected !== false && m.text)
+        .map((m) => ({
+          id: "practice-" + m.id,
+          title: m.name.replace(/\.[^.]+$/, ""),
+          chapter: m.kind,
+          html: markdownToHTML(m.text),
+          practiceMaterialId: m.id,
+          page: 1,
+        })),
+    ],
+  };
+}
+async function addPracticeFiles(files) {
+  const n = note(),
+    status = $("#practice-file-status");
+  if (files.length > 15) {
+    status.textContent = "한 번에 15개 이하로 추가하세요.";
+    return;
+  }
+  status.textContent = "자료를 저장하고 있어요…";
+  try {
+    const staged = [];
+    for (const file of files) {
+      if (file.size > 25 * 1024 * 1024)
+        throw new Error("파일당 25MB 이하로 추가하세요.");
+      const id = uid(),
+        text = /\.(txt|md)$/i.test(file.name) ? await file.text() : "";
+      if (text.length > 400000)
+        throw new Error("텍스트는 40만 자 이하로 나누어 주세요.");
+      await storeFile(id, file);
+      staged.push({
+        id,
+        name: file.name,
+        fileKey: id,
+        kind: "기출문제",
+        text,
+        selected: true,
+      });
+    }
+    snapshot();
+    n.practiceMaterials ||= [];
+    n.practiceMaterials.push(...staged);
+    save();
+    if (note()?.id === n.id) {
+      if ($("#practice-materials"))
+        $("#practice-materials").innerHTML = practiceMaterialList(n);
+      status.textContent = staged.length + "개 자료를 추가했어요.";
+    }
+  } catch (error) {
+    status.textContent = error.message || "첨부하지 못했어요.";
+  }
+}
+function handleNoteFlowAction(action, el) {
+  if (action === "note-row-menu") {
+    ui.menuNoteId = el.dataset.id;
+    const n = data.notes.find((n) => n.id === ui.menuNoteId);
+    if (!n) return true;
+    showModal(
+      esc(n.title),
+      `<div class="note-small-menu">${btn(icon("dna") + "DNA 설정", "note-menu-dna")}${btn(icon("download") + "공유", "note-menu-share")}${btn(icon("trash") + "삭제", "note-menu-delete", "danger")}</div>`,
+    );
+    $("#modal").classList.add("note-menu-dialog");
+    return true;
+  }
+  if (action.startsWith("note-menu-")) {
+    const id = ui.menuNoteId;
+    closeModal();
+    if (action === "note-menu-delete") {
+      deleteNote(id);
+      return true;
+    }
+    openNote(id);
+    if (action === "note-menu-dna") {
+      ui.view = "dna-manager";
+      render();
+    } else noteShareModal();
+    return true;
+  }
+  if (action === "creation-dna-select") {
+    const id = el.dataset.id,
+      t = data.savedTemplates.find((t) => t.id === id);
+    ui.creation.template = id;
+    ui.newPersonalDraft = structuredClone(t?.personal || personalDefaults);
+    ui.newSubjectDraft = t
+      ? structuredClone({ ...subjectDefaults, ...t.settings })
+      : applySubjectMode(structuredClone(subjectDefaults), id);
+    ui.creation.prompt = t?.prompt || "";
+    ui.creation.prompts = structuredClone(t?.prompts || []);
+    $("#creation-dna-choices").innerHTML = creationDnaChoices();
+    $("#creation-dna-fields").innerHTML = creationDnaFields();
+    return true;
+  }
+  if (action === "practice-open-file") {
+    const m = note().practiceMaterials?.find((m) => m.id === el.dataset.id);
+    if (m) void showActualSource(m);
+    return true;
+  }
+  if (action === "practice-delete-file") {
+    snapshot();
+    note().practiceMaterials = note().practiceMaterials.filter(
+      (m) => m.id !== el.dataset.id,
+    );
+    save();
+    render();
+    toast("자료를 목록에서 제거했어요. 실행 취소로 복원할 수 있어요.");
+    return true;
+  }
+  return false;
+}
+document.addEventListener("change", (e) => {
+  const el = e.target;
+  if (el.id === "practice-files") void addPracticeFiles([...el.files]);
+  if (el.dataset.practiceUse) {
+    const m = note().practiceMaterials.find(
+      (m) => m.id === el.dataset.practiceUse,
+    );
+    if (m) {
+      m.selected = el.checked;
+      save();
+    }
+  }
+  if (el.dataset.practiceKind) {
+    const m = note().practiceMaterials.find(
+      (m) => m.id === el.dataset.practiceKind,
+    );
+    if (m) {
+      m.kind = el.value;
+      save();
+    }
+  }
+});
+document.addEventListener("input", (e) => {
+  if (e.target.id === "creation-dna-prompt") {
+    ui.creation.prompt = e.target.value;
+  }
+});
+function dnaCoursePanel() {
+  return `<aside class="dna-course-panel" aria-label="DNA 과목 선택"><h2>과목</h2><nav>${data.notes.map((n) => btn(icon("file") + `<span>${esc(n.subject)}</span>`, "dna-course-select", n.id === ui.noteId ? "current" : "", `data-id="${esc(n.id)}" aria-current="${n.id === ui.noteId ? "page" : "false"}"`)).join("") || '<p class="desk-hint">등록한 과목이 없어요.</p>'}</nav></aside>`;
+}
+function dnaExplorePage() {
+  ui.libraryTab = "community";
+  return `<section class="dna-explore-page"><header class="dna-manager-heading"><span class="desk-eyebrow">다른 정리 방식에서 발견하기</span><h1>DNA 둘러보기</h1><p>과목과 학습 목적에 맞는 DNA를 찾아보고 내 노트에 가져오세요.</p></header><div class="dna-explore-controls"><label class="desk-search">${icon("search")}<input id="ws-library-search" placeholder="DNA 이름, 과목, 학습 목적 검색" aria-label="DNA 둘러보기 검색"></label><select id="ws-community-sort" aria-label="DNA 정렬"><option value="recent">최신순</option><option value="likes">좋아요순</option><option value="downloads">다운로드순</option></select></div><p class="dna-explore-notice">예시 DNA와 이 기기에 등록한 공유 DNA를 보여드려요. 온라인 커뮤니티는 연결 전이며 좋아요와 다운로드 기록은 이 기기에 저장됩니다.</p><div id="ws-library-results" class="dna-explore-grid">${libraryResults("community")}</div><div class="desk-inline-actions">${btn("외부 DNA 파일 가져오기", "ws-import-package", "btn secondary")}</div></section>`;
+}
+function dnaExploreCards(items) {
+  return (
+    items
+      .map(
+        (t) =>
+          `<article class="dna-explore-card"><div class="dna-explore-tags"><span>${esc(t.subject || "공통")}</span><span>${esc(t.purpose || "자유 학습")}</span></div><h2>${esc(t.name)}</h2><p>${esc(t.description || t.text || "")}</p><small>${esc(t.author || "공유 작성자")}</small><div class="dna-explore-counts"><span>좋아요 ${t.likes || 0}</span><span>다운로드 ${t.downloads || 0}</span></div><div class="dna-explore-actions">${btn(data.communityLikes.includes(t.id) ? "♥ 좋아요" : "♡ 좋아요", "ws-like", "text-button", `data-id="${esc(t.id)}" aria-pressed="${data.communityLikes.includes(t.id)}"`)}${btn("미리보기", "ws-library-preview", "text-button", `data-id="${esc(t.id)}" data-kind="community"`)}${btn(icon("download") + "다운로드", "dna-external-download", "btn secondary", `data-id="${esc(t.id)}"`)}</div></article>`,
+      )
+      .join("") ||
+    '<p class="desk-hint">검색 결과가 없어요. 다른 이름이나 과목으로 찾아보세요.</p>'
+  );
+}
+function handleDnaExploreAction(action, el) {
+  if (action === "dna-explore") {
+    closeModal();
+    ui.view = "dna-explore";
+    ui.libraryTab = "community";
+    render();
+    return true;
+  }
+  if (action === "dna-course-select") {
+    if (!data.notes.some((n) => n.id === el.dataset.id)) return true;
+    ui.noteId = el.dataset.id;
+    ui.dnaSubject = note().subject;
+    ui.selected = null;
+    ui.view = "dna-manager";
+    render();
+    return true;
+  }
+  if (action === "dna-external-download") {
+    const t = [...communitySamples(), ...data.communityItems].find(
+      (t) => t.id === el.dataset.id,
+    );
+    if (!t) return true;
+    download(
+      safeName(t.name) + ".note-dna.json",
+      JSON.stringify(
+        {
+          format: "note-dna-package",
+          version: 1,
+          kind: t.kind === "prompt" ? "prompt" : "template",
+          item: t,
+        },
+        null,
+        2,
+      ),
+      "application/json",
+    );
+    data.communityDownloads ||= {};
+    data.communityDownloads[t.id] = (data.communityDownloads[t.id] || 0) + 1;
+    save();
+    $("#ws-library-results").innerHTML = libraryResults(
+      "community",
+      $("#ws-library-search").value,
+      $("#ws-community-sort").value,
+    );
+    toast("DNA 파일을 내려받았어요.");
+    return true;
+  }
+  return false;
+}
