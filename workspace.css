@@ -1548,6 +1548,7 @@ body {
   min-width: 0;
 }
 .note-margin {
+  align-self: stretch;
   min-width: 0;
   padding: 27px 0 20px 16px;
   border-left: 1px solid #edf0f5;
@@ -1564,12 +1565,15 @@ body {
 }
 .margin-toolbar .text-button {
   opacity: 0;
-  font-size: 10px;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+  font-size: 12px;
   white-space: nowrap;
 }
-.note-content-row:hover .margin-toolbar .text-button,
-.note-content-row:focus-within .margin-toolbar .text-button {
+.note-margin:hover .margin-toolbar .text-button,
+.note-margin:focus-within .margin-toolbar .text-button {
   opacity: 1;
+  pointer-events: auto;
 }
 .note-margin .note-block {
   padding: 10px 0;
@@ -1581,17 +1585,17 @@ body {
   display: none;
 }
 .note-margin .block-title h2 {
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1.7;
   font-weight: 500;
 }
 .note-margin .block-content {
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.85;
-  color: #7b8597;
+  color: #657084;
 }
 .note-margin .source-label {
-  font-size: 9px;
+  font-size: 11px;
 }
 .note-margin .memo-body {
   background: #fffaf0;
@@ -1606,7 +1610,7 @@ body {
   display: none;
 }
 .note-margin .block-content table {
-  font-size: 10px;
+  font-size: 12px;
   display: block;
   overflow: auto;
 }
@@ -1630,7 +1634,7 @@ body {
 }
 .note-margin .side-example {
   padding: 10px;
-  font-size: 11px;
+  font-size: 13px;
 }
 .desk-rail {
   width: 270px;
@@ -1881,9 +1885,6 @@ body {
     margin-bottom: 16px;
     margin-left: 22px;
   }
-  .margin-toolbar .text-button {
-    opacity: 1;
-  }
   .note-margin:has(.note-block),
   .note-margin:has(.side-example) {
     background: #fcfcfd;
@@ -2106,5 +2107,12 @@ body {
   }
   .dna-explore-controls .desk-search {
     flex-basis: 100%;
+  }
+}
+
+@media (hover: none) {
+  .margin-toolbar .text-button {
+    opacity: 1;
+    pointer-events: auto;
   }
 }
