@@ -1320,3 +1320,216 @@ body {
     display: none;
   }
 }
+/* Right-hand reading companions. Originals remain in the note data. */
+.desk-rail {
+  width: 340px;
+  flex-basis: 340px;
+}
+.desk-side-section {
+  border-top: 1px solid #e4e8ee;
+  margin-top: 26px;
+  padding-top: 20px;
+}
+.desk-side-section h3 {
+  font-size: 13px;
+  margin: 0 0 14px;
+  color: #58667e;
+}
+.desk-side-section h3 small {
+  color: #98a4b6;
+  font-size: 10px;
+  font-weight: 400;
+  margin-left: 7px;
+}
+.side-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.desk-side-section .note-block {
+  margin: 0 0 12px;
+  padding: 13px 12px;
+  border: 1px solid #e5e9f0;
+  background: white;
+}
+.desk-side-section .section-number {
+  display: none;
+}
+.desk-side-section .block-title h2 {
+  font-size: 12px;
+  line-height: 1.7;
+}
+.desk-side-section .block-content {
+  font-size: 12px;
+  line-height: 1.9;
+}
+.desk-side-section .block-content table {
+  font-size: 10px;
+}
+.desk-side-section .source-label {
+  font-size: 10px;
+}
+.desk-side-section .block-handle {
+  left: -19px;
+  width: 18px;
+}
+.desk-side-section .context-toolbar {
+  flex-wrap: wrap;
+}
+.desk-side-section .context-toolbar button {
+  font-size: 10px;
+  padding: 4px 6px;
+}
+.desk-side-section .supplementary-content {
+  padding-top: 12px;
+}
+.desk-side-section .expand-hint {
+  font-size: 9px;
+  white-space: nowrap;
+}
+.side-example {
+  border: 1px solid #e5e9f0;
+  border-radius: 6px;
+  background: #fff;
+  padding: 12px;
+  margin: 10px 0;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.side-example summary {
+  cursor: pointer;
+  color: #64748e;
+}
+.side-example p {
+  color: #69768a;
+}
+.desk-side-section .memo-body {
+  background: #fffaf0;
+  border: 0;
+}
+.dna-reading-copy {
+  font-size: 14px;
+  line-height: 1.95;
+  color: #586171;
+  overflow-wrap: anywhere;
+}
+.dna-reading-copy table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+  margin: 14px 0;
+}
+.dna-reading-copy td,
+.dna-reading-copy th {
+  padding: 8px 10px;
+  border: 1px solid #e4e8ee;
+  text-align: left;
+  vertical-align: top;
+}
+.dna-reading-copy th {
+  background: #f6f8fc;
+  font-weight: 500;
+}
+.dna-reading-copy p {
+  margin: 0 0 12px;
+}
+.dna-original-content {
+  display: none;
+}
+.note-block.selected .dna-original-content {
+  display: block;
+}
+.note-block.selected .dna-reading-copy,
+.note-block.selected .dna-read-more {
+  display: none;
+}
+.dna-numbered-list {
+  list-style: none;
+  padding-left: 24px;
+}
+.dna-numbered-list > li {
+  position: relative;
+  margin: 7px 0;
+}
+.dna-numbered-list > li::before {
+  content: attr(data-dna-number);
+  position: absolute;
+  right: calc(100% + 7px);
+  color: #8a97ac;
+  white-space: nowrap;
+}
+[data-dna-emphasis="형광펜"] .dna-emphasis {
+  font-weight: 500;
+  background: #fff0aa;
+  box-decoration-break: clone;
+}
+[data-dna-emphasis="빨간줄"] .dna-emphasis {
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: #d88888;
+  text-underline-offset: 4px;
+}
+[data-dna-emphasis="별표"] .dna-emphasis::before {
+  content: "★ ";
+  color: #bc9356;
+  font-size: 10px;
+}
+.dna-reading-copy .dna-deemphasized {
+  font-weight: inherit !important;
+  background: transparent !important;
+  text-decoration: none !important;
+}
+.dna-reading-copy .dna-deemphasized::before {
+  content: none !important;
+}
+[data-dna-amount="많이"] .dna-reading-copy p:first-of-type {
+  font-weight: 500;
+}
+[data-dna-length="핵심만 간단히"]
+  .note-block:not(.dna-show-full):not(.selected)
+  .dna-reading-copy {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+[data-dna-paragraphs="간단하게 2단계"] .note-block {
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+[data-dna-paragraphs="자세하게 4단계"] .dna-reading-copy p {
+  margin-bottom: 20px;
+}
+.dna-minor-heading {
+  font-size: inherit;
+  font-weight: 500;
+}
+.dna-live-preview {
+  padding: 18px;
+  background: #fafbfe;
+  border-radius: 6px;
+}
+.dna-live-preview section {
+  margin-top: 20px;
+}
+.dna-live-preview h3 {
+  font-size: 16px;
+}
+@media (max-width: 1200px) {
+  .desk-rail {
+    width: 290px;
+    flex-basis: 290px;
+  }
+}
+@media (max-width: 980px) {
+  .desk-rail {
+    width: 270px;
+    flex-basis: 270px;
+  }
+}
+@media (max-width: 760px) {
+  .rail-mobile-open .desk-rail {
+    width: min(100%, 430px);
+  }
+}

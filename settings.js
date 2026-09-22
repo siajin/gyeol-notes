@@ -897,7 +897,11 @@ function researchLabel(value) {
 }
 function refreshScopedPreview() {
   ui.draft = structuredClone(dna(ui.dnaSubject));
-  if ($("#dna-preview")) $("#dna-preview").innerHTML = scopedPreview(ui.draft);
+  if ($("#dna-preview"))
+    $("#dna-preview").innerHTML =
+      typeof liveDnaPreview === "function"
+        ? liveDnaPreview()
+        : scopedPreview(ui.draft);
   refreshRecommendations();
 }
 function handleScopedAction(action, el) {
