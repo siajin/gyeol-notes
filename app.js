@@ -10,6 +10,7 @@ const esc = (value) =>
       ],
   );
 const paths = {
+  pin: "M8 3h8l-1 7 4 4v2H5v-2l4-4-1-7ZM12 16v6",
   book: "M4 4h6c1.5 0 2 1 2 2v15c0-2-2-3-4-3H4V4Zm16 0h-6c-1.5 0-2 1-2 2m0 15c0-2 2-3 4-3h4V4Z",
   file: "M14 3H5v18h14V8l-5-5Zm0 0v5h5M8 12h8M8 16h6",
   grid: "M4 4h6v6H4Zm10 0h6v6h-6ZM4 14h6v6H4Zm10 0h6v6h-6Z",
@@ -601,7 +602,7 @@ const templates = [
   },
 ];
 function templatesPage() {
-  return `<section class="page"><header class="page-header"><div><h1>정리의 시작점</h1><p>마음에 드는 방식을 고르고, 내 스타일을 조금 더하세요.</p></div>${btn(icon("download") + "내 DNA 내보내기", "export-dna", "btn secondary")}</header><div class="page-section-head"><h2>기본 템플릿</h2><span class="muted" style="font-size:11px">나에게 맞게 조합할 수 있어요</span></div><div class="template-grid">${templates.map((t, i) => `<article class="template-card"><div class="template-sample ${t.color || ""}"><h3>${i === 0 ? "01. 핵심 개념" : i === 1 ? "수식과 풀이 과정" : "개념을 연결하며"}</h3>${i === 1 ? '<div class="sample-formula">Ax = λx</div>' : '<div class="sample-rule"></div><div class="sample-rule short"></div>'}<div class="sample-rule"></div><div class="sample-rule short"></div></div><div class="template-info"><span class="source-label">${t.subject}</span><h2>${t.name}</h2><p>${t.description}</p>${btn("미리보기 및 적용" + icon("arrow"), "template-preview", "btn secondary", `data-id="${t.id}"`)}</div></article>`).join("")}</div><p class="template-footnote">기본 제공 예시 템플릿입니다. 내 Note DNA는 파일로 내보내 공유할 수 있어요.</p></section>`;
+  return `<section class="page"><header class="page-header"><div><h1>정리의 시작점</h1><p>마음에 드는 방식을 고르고, 내 스타일을 조금 더하세요.</p></div>${btn(icon("download") + "내 DNA 내보내기", "export-dna", "btn secondary")}</header><div class="page-section-head"><h2>기본 DNA</h2><span class="muted" style="font-size:11px">나에게 맞게 조합할 수 있어요</span></div><div class="template-grid">${templates.map((t, i) => `<article class="template-card"><div class="template-sample ${t.color || ""}"><h3>${i === 0 ? "01. 핵심 개념" : i === 1 ? "수식과 풀이 과정" : "개념을 연결하며"}</h3>${i === 1 ? '<div class="sample-formula">Ax = λx</div>' : '<div class="sample-rule"></div><div class="sample-rule short"></div>'}<div class="sample-rule"></div><div class="sample-rule short"></div></div><div class="template-info"><span class="source-label">${t.subject}</span><h2>${t.name}</h2><p>${t.description}</p>${btn("미리보기 및 적용" + icon("arrow"), "template-preview", "btn secondary", `data-id="${t.id}"`)}</div></article>`).join("")}</div><p class="template-footnote">기본 제공 예시 DNA입니다. 내 Note DNA는 파일로 내보내 공유할 수 있어요.</p></section>`;
 }
 function showModal(title, body, footer = "", subtitle = "", eyebrow = "") {
   closePopover();
